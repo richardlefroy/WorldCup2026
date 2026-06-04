@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA World Cup 2026 — Group Stage Schedule</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f2f1ed;
+    color: #1a1a1a;
+    padding: 0 0 3rem;
+  }
+
+  header {
+    background: #111;
+    color: #fff;
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-left h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  .header-left p { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+  .tz-selector { display: flex; align-items: center; gap: 8px; }
+  .tz-selector label { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .tz-selector select {
+    background: #222; color: #fff; border: 1px solid #444;
+    border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; outline: none;
+  }
+  .tz-selector select:hover { border-color: #666; }
+
+  .content { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+  .filter-section { margin-bottom: 1rem; }
+  .filter-label {
+    font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: 6px;
+  }
+
+  .pill-filter {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1.25rem;
+  }
+
+  .pill-filter button {
+    padding: 5px 12px; border-radius: 20px; border: 1px solid #ccc;
+    background: #fff; font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; color: #333;
+  }
+  .pill-filter button:hover { border-color: #888; }
+  .pill-filter button.active { background: #111; color: #fff; border-color: #111; }
+
+  /* Person filter uses accent colour when active */
+  .person-filter button.active {
+    background: #1d4ed8; color: #fff; border-color: #1d4ed8;
+  }
+
+  .day-block { margin-bottom: 1.5rem; }
+  .day-header {
+    font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 0 0 8px; border-bottom: 1px solid #ddd; margin-bottom: 10px;
+  }
+
+  .matches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 8px;
+  }
+
+  .match-card {
+    background: #fff; border-radius: 10px; border: 1px solid #e5e3de;
+    padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+    transition: border-color 0.15s;
+  }
+  .match-card:hover { border-color: #bbb; }
+
+  /* Highlight cards where a selected person is playing */
+  .match-card.person-highlight { border-color: #93c5fd; background: #eff6ff; }
+
+  .match-group-badge {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.05em; padding: 3px 7px;
+    border-radius: 4px; white-space: nowrap; flex-shrink: 0; align-self: flex-start; margin-top: 2px;
+  }
+  .badge-a { background:#dbeafe;color:#1e40af; }
+  .badge-b { background:#dbeafe;color:#1e40af; }
+  .badge-c { background:#dcfce7;color:#166534; }
+  .badge-d { background:#dcfce7;color:#166534; }
+  .badge-e { background:#fef9c3;color:#854d0e; }
+  .badge-f { background:#fef9c3;color:#854d0e; }
+  .badge-g { background:#ffedd5;color:#9a3412; }
+  .badge-h { background:#ffedd5;color:#9a3412; }
+  .badge-i { background:#fce7f3;color:#9d174d; }
+  .badge-j { background:#fce7f3;color:#9d174d; }
+  .badge-k { background:#ede9fe;color:#5b21b6; }
+  .badge-l { background:#ede9fe;color:#5b21b6; }
+
+  .match-teams { flex: 1; min-width: 0; }
+  .team-row-m { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+  .team-flag { font-size: 18px; line-height: 1; width: 22px; flex-shrink: 0; }
+  .team-name { font-size: 13px; font-weight: 500; color: #111; }
+  .team-person {
+    font-size: 11px; color: #888; margin-left: auto; white-space: nowrap; padding-left: 6px;
+  }
+  .team-person.highlighted { color: #1d4ed8; font-weight: 600; }
+
+  .vs-divider { font-size: 10px; color: #ccc; padding: 1px 0 1px 29px; }
+
+  .match-meta { text-align: right; flex-shrink: 0; }
+  .match-time { font-size: 14px; font-weight: 600; color: #111; white-space: nowrap; }
+  .match-venue { font-size: 10px; color: #999; margin-top: 3px; white-space: nowrap; }
+
+  .no-matches {
+    font-size: 14px; color: #999; text-align: center; padding: 3rem; display: none;
+  }
+
+  @media (max-width: 500px) {
+    header { padding: 1rem; }
+    .matches-grid { grid-template-columns: 1fr; }
+    .match-venue { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>⚽ FIFA World Cup 2026 — Group Stage</h1>
+    <p>48 teams · 48 matches · June 11–27, 2026</p>
+  </div>
+  <div class="tz-selector">
+    <label>Timezone:</label>
+    <select id="tzSelect" onchange="renderSchedule()">
+      <option value="local">Match local time</option>
+      <option value="Australia/Perth" selected>Perth (AWST)</option>
+      <option value="Australia/Melbourne">Melbourne (AEST)</option>
+      <option value="Australia/Hobart">Hobart (AEST)</option>
+      <option value="Europe/Berlin">Germany (CEST)</option>
+      <option value="Europe/Rome">Italy (CEST)</option>
+      <option value="Europe/London">United Kingdom (BST)</option>
+      <option value="America/Los_Angeles">Los Angeles (PT)</option>
+      <option value="Europe/Zurich">Switzerland (CEST)</option>
+    </select>
+  </div>
+</header>
+
+<div class="content">
+
+  <div class="filter-section">
+    <div class="filter-label">Filter by group</div>
+    <div class="pill-filter group-filter" id="groupFilter">
+      <button class="active" data-group="all" onclick="filterGroup(this)">All</button>
+      <button data-group="A" onclick="filterGroup(this)">Group A</button>
+      <button data-group="B" onclick="filterGroup(this)">Group B</button>
+      <button data-group="C" onclick="filterGroup(this)">Group C</button>
+      <button data-group="D" onclick="filterGroup(this)">Group D</button>
+      <button data-group="E" onclick="filterGroup(this)">Group E</button>
+      <button data-group="F" onclick="filterGroup(this)">Group F</button>
+      <button data-group="G" onclick="filterGroup(this)">Group G</button>
+      <button data-group="H" onclick="filterGroup(this)">Group H</button>
+      <button data-group="I" onclick="filterGroup(this)">Group I</button>
+      <button data-group="J" onclick="filterGroup(this)">Group J</button>
+      <button data-group="K" onclick="filterGroup(this)">Group K</button>
+      <button data-group="L" onclick="filterGroup(this)">Group L</button>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-label">Filter by person — select one or more to highlight their matches</div>
+    <div class="pill-filter person-filter" id="personFilter">
+      <button class="active" data-person="all" onclick="filterPerson(this)">Everyone</button>
+      <button data-person="Alix B" onclick="filterPerson(this)">Alix B</button>
+      <button data-person="Alex L" onclick="filterPerson(this)">Alex L</button>
+      <button data-person="Charlie" onclick="filterPerson(this)">Charlie</button>
+      <button data-person="Claire" onclick="filterPerson(this)">Claire</button>
+      <button data-person="Craig" onclick="filterPerson(this)">Craig</button>
+      <button data-person="Darcy" onclick="filterPerson(this)">Darcy</button>
+      <button data-person="Elliot" onclick="filterPerson(this)">Elliot</button>
+      <button data-person="Emma" onclick="filterPerson(this)">Emma</button>
+      <button data-person="Ewen" onclick="filterPerson(this)">Ewen</button>
+      <button data-person="Finn" onclick="filterPerson(this)">Finn</button>
+      <button data-person="Francesca" onclick="filterPerson(this)">Francesca</button>
+      <button data-person="Georgette" onclick="filterPerson(this)">Georgette</button>
+      <button data-person="James A" onclick="filterPerson(this)">James A</button>
+      <button data-person="Jennifer" onclick="filterPerson(this)">Jennifer</button>
+      <button data-person="Jono" onclick="filterPerson(this)">Jono</button>
+      <button data-person="Joy" onclick="filterPerson(this)">Joy</button>
+      <button data-person="JoyJoy" onclick="filterPerson(this)">JoyJoy</button>
+      <button data-person="Katy" onclick="filterPerson(this)">Katy</button>
+      <button data-person="Khrob" onclick="filterPerson(this)">Khrob</button>
+      <button data-person="Leah" onclick="filterPerson(this)">Leah</button>
+      <button data-person="Lily" onclick="filterPerson(this)">Lily</button>
+      <button data-person="Louis" onclick="filterPerson(this)">Louis</button>
+      <button data-person="Lucy" onclick="filterPerson(this)">Lucy</button>
+      <button data-person="Massimo" onclick="filterPerson(this)">Massimo</button>
+      <button data-person="Matty" onclick="filterPerson(this)">Matty</button>
+      <button data-person="Mike L" onclick="filterPerson(this)">Mike L</button>
+      <button data-person="Mike S" onclick="filterPerson(this)">Mike S</button>
+      <button data-person="Mila" onclick="filterPerson(this)">Mila</button>
+      <button data-person="Mim" onclick="filterPerson(this)">Mim</button>
+      <button data-person="Nic T" onclick="filterPerson(this)">Nic T</button>
+      <button data-person="Olive E" onclick="filterPerson(this)">Olive E</button>
+      <button data-person="Olive P" onclick="filterPerson(this)">Olive P</button>
+      <button data-person="Renate" onclick="filterPerson(this)">Renate</button>
+      <button data-person="Richie" onclick="filterPerson(this)">Richie</button>
+      <button data-person="Rob" onclick="filterPerson(this)">Rob</button>
+      <button data-person="Rod" onclick="filterPerson(this)">Rod</button>
+      <button data-person="Rosa" onclick="filterPerson(this)">Rosa</button>
+      <button data-person="Sal Edmonds" onclick="filterPerson(this)">Sal Edmonds</button>
+      <button data-person="Sarah" onclick="filterPerson(this)">Sarah</button>
+      <button data-person="Seamus" onclick="filterPerson(this)">Seamus</button>
+      <button data-person="Sophie" onclick="filterPerson(this)">Sophie</button>
+      <button data-person="Susan" onclick="filterPerson(this)">Susan</button>
+      <button data-person="Taki" onclick="filterPerson(this)">Taki</button>
+      <button data-person="Ted" onclick="filterPerson(this)">Ted</button>
+      <button data-person="Tenille" onclick="filterPerson(this)">Tenille</button>
+      <button data-person="Tessa" onclick="filterPerson(this)">Tessa</button>
+      <button data-person="Wilfy" onclick="filterPerson(this)">Wilfy</button>
+    </div>
+  </div>
+
+  <div id="schedule"></div>
+  <div class="no-matches" id="noMatches">No matches found for the current filters.</div>
+
+</div>
+
+<script>
+const PEOPLE = {
+  "Mexico":"Katy","South Africa":"Rod","South Korea":"Emma","Czechia":"Khrob",
+  "Canada":"Ted","Bosnia & Herz.":"Finn","Qatar":"Jono","Switzerland":"Renate",
+  "Brazil":"Joy","Morocco":"Louis","Haiti":"Darcy","Scotland":"Massimo",
+  "USA":"Sarah","Paraguay":"Olive P","Australia":"Rosa","Turkey":"Rob",
+  "Germany":"Ben","Curaçao":"Wilfy","Cote d'Ivoire":"Olive E","Ecuador":"Nic T",
+  "Netherlands":"Sophie","Japan":"Francesca","Sweden":"Ewen","Tunisia":"Charlie",
+  "Belgium":"Lucy","Egypt":"Susan","Iran":"Claire","New Zealand":"Craig",
+  "Spain":"Georgette","Cabo Verde":"Leah","Saudi Arabia":"Seamus","Uruguay":"Richie",
+  "France":"Taki","Senegal":"James A","Iraq":"Mim","Norway":"Tessa",
+  "Argentina":"Matty","Algeria":"Tenille","Austria":"Elliot","Jordan":"Jennifer",
+  "Portugal":"Mike S","DR Congo":"JoyJoy","Uzbekistan":"Alix B","Colombia":"Sal Edmonds",
+  "England":"Lily","Croatia":"Mila","Ghana":"Alex L","Panama":"Mike L"
+};
+
+const FLAGS = {
+  "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czechia":"🇨🇿",
+  "Canada":"🇨🇦","Bosnia & Herz.":"🇧🇦","Qatar":"🇶🇦","Switzerland":"🇨🇭",
+  "Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkey":"🇹🇷",
+  "Germany":"🇩🇪","Curaçao":"🇨🇼","Cote d'Ivoire":"🇨🇮","Ecuador":"🇪🇨",
+  "Netherlands":"🇳🇱","Japan":"🇯🇵","Sweden":"🇸🇪","Tunisia":"🇹🇳",
+  "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+  "Spain":"🇪🇸","Cabo Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+  "France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶","Norway":"🇳🇴",
+  "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","DR Congo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+  "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦"
+};
+
+// Venue -> IANA tz for "match local time" mode
+const VENUE_TZ = {
+  "Mexico City":   "America/Mexico_City",
+  "Guadalajara":   "America/Mexico_City",
+  "Monterrey":     "America/Monterrey",
+  "Toronto":       "America/Toronto",
+  "Vancouver":     "America/Vancouver",
+  "New York/NJ":   "America/New_York",
+  "Boston":        "America/New_York",
+  "Philadelphia":  "America/New_York",
+  "Atlanta":       "America/New_York",
+  "Miami":         "America/New_York",
+  "Kansas City":   "America/Chicago",
+  "Houston":       "America/Chicago",
+  "Dallas":        "America/Chicago",
+  "Seattle":       "America/Los_Angeles",
+  "Los Angeles":   "America/Los_Angeles",
+  "San Francisco": "America/Los_Angeles",
+};
+
+// Store UTC times as ms since epoch
+function etMs(dateStr, h, m) {
+  const utcH = h + 4; // ET = UTC-4 in June
+  return Date.UTC(2026, parseInt(dateStr.split('-')[1])-1, parseInt(dateStr.split('-')[2]), utcH, m||0);
+}
+
+const MATCHES = [
+  // June 11
+  { ms:etMs("2026-06-11",15,0),  group:"A", t1:"Mexico",        t2:"South Africa",  venue:"Mexico City" },
+  { ms:etMs("2026-06-11",22,0),  group:"A", t1:"South Korea",   t2:"Czechia",       venue:"Guadalajara" },
+  // June 12
+  { ms:etMs("2026-06-12",15,0),  group:"B", t1:"Canada",        t2:"Bosnia & Herz.", venue:"Toronto" },
+  { ms:etMs("2026-06-12",21,0),  group:"D", t1:"USA",           t2:"Paraguay",      venue:"Los Angeles" },
+  // June 13
+  { ms:etMs("2026-06-13",15,0),  group:"B", t1:"Qatar",         t2:"Switzerland",   venue:"San Francisco" },
+  { ms:etMs("2026-06-13",18,0),  group:"C", t1:"Brazil",        t2:"Morocco",       venue:"New York/NJ" },
+  { ms:etMs("2026-06-13",21,0),  group:"C", t1:"Haiti",         t2:"Scotland",      venue:"Boston" },
+  { ms:etMs("2026-06-14", 0,0),  group:"D", t1:"Australia",     t2:"Turkey",        venue:"Vancouver" },
+  // June 14
+  { ms:etMs("2026-06-14",13,0),  group:"E", t1:"Germany",       t2:"Curaçao",       venue:"Houston" },
+  { ms:etMs("2026-06-14",16,0),  group:"F", t1:"Netherlands",   t2:"Japan",         venue:"Dallas" },
+  { ms:etMs("2026-06-14",19,0),  group:"E", t1:"Cote d'Ivoire", t2:"Ecuador",       venue:"Philadelphia" },
+  { ms:etMs("2026-06-14",22,0),  group:"F", t1:"Tunisia",       t2:"Sweden",        venue:"Monterrey" },
+  // June 15
+  { ms:etMs("2026-06-15",12,0),  group:"H", t1:"Spain",         t2:"Cabo Verde",    venue:"Atlanta" },
+  { ms:etMs("2026-06-15",15,0),  group:"G", t1:"Belgium",       t2:"Egypt",         venue:"Seattle" },
+  { ms:etMs("2026-06-15",18,0),  group:"H", t1:"Saudi Arabia",  t2:"Uruguay",       venue:"Miami" },
+  { ms:etMs("2026-06-15",21,0),  group:"G", t1:"Iran",          t2:"New Zealand",   venue:"Los Angeles" },
+  // June 16
+  { ms:etMs("2026-06-16",15,0),  group:"I", t1:"France",        t2:"Senegal",       venue:"New York/NJ" },
+  { ms:etMs("2026-06-16",18,0),  group:"I", t1:"Iraq",          t2:"Norway",        venue:"Boston" },
+  { ms:etMs("2026-06-16",21,0),  group:"J", t1:"Argentina",     t2:"Algeria",       venue:"Kansas City" },
+  { ms:etMs("2026-06-17", 0,0),  group:"J", t1:"Austria",       t2:"Jordan",        venue:"San Francisco" },
+  // June 17
+  { ms:etMs("2026-06-17",13,0),  group:"K", t1:"Portugal",      t2:"DR Congo",      venue:"Houston" },
+  { ms:etMs("2026-06-17",16,0),  group:"L", t1:"England",       t2:"Croatia",       venue:"Dallas" },
+  { ms:etMs("2026-06-17",19,0),  group:"L", t1:"Ghana",         t2:"Panama",        venue:"Toronto" },
+  { ms:etMs("2026-06-17",22,0),  group:"K", t1:"Uzbekistan",    t2:"Colombia",      venue:"Mexico City" },
+  // June 18
+  { ms:etMs("2026-06-18",12,0),  group:"A", t1:"Czechia",       t2:"South Africa",  venue:"Atlanta" },
+  { ms:etMs("2026-06-18",15,0),  group:"B", t1:"Switzerland",   t2:"Bosnia & Herz.", venue:"Los Angeles" },
+  { ms:etMs("2026-06-18",18,0),  group:"B", t1:"Canada",        t2:"Qatar",         venue:"Vancouver" },
+  { ms:etMs("2026-06-18",21,0),  group:"A", t1:"Mexico",        t2:"South Korea",   venue:"Guadalajara" },
+  // June 19
+  { ms:etMs("2026-06-19",15,0),  group:"D", t1:"USA",           t2:"Australia",     venue:"Seattle" },
+  { ms:etMs("2026-06-19",15,0),  group:"C", t1:"Scotland",      t2:"Morocco",       venue:"Boston" },
+  { ms:etMs("2026-06-19",21,0),  group:"C", t1:"Brazil",        t2:"Haiti",         venue:"Philadelphia" },
+  { ms:etMs("2026-06-20", 0,0),  group:"D", t1:"Turkey",        t2:"Paraguay",      venue:"San Francisco" },
+  // June 20
+  { ms:etMs("2026-06-20",13,0),  group:"F", t1:"Netherlands",   t2:"Sweden",        venue:"Houston" },
+  { ms:etMs("2026-06-20",16,0),  group:"E", t1:"Germany",       t2:"Cote d'Ivoire", venue:"Toronto" },
+  { ms:etMs("2026-06-20",20,0),  group:"E", t1:"Ecuador",       t2:"Curaçao",       venue:"Kansas City" },
+  { ms:etMs("2026-06-21", 0,0),  group:"F", t1:"Tunisia",       t2:"Japan",         venue:"Monterrey" },
+  // June 21
+  { ms:etMs("2026-06-21",12,0),  group:"H", t1:"Spain",         t2:"Saudi Arabia",  venue:"Atlanta" },
+  { ms:etMs("2026-06-21",15,0),  group:"G", t1:"Belgium",       t2:"Iran",          venue:"Los Angeles" },
+  { ms:etMs("2026-06-21",18,0),  group:"H", t1:"Uruguay",       t2:"Cabo Verde",    venue:"Miami" },
+  { ms:etMs("2026-06-21",21,0),  group:"G", t1:"New Zealand",   t2:"Egypt",         venue:"Vancouver" },
+  // June 22
+  { ms:etMs("2026-06-22",13,0),  group:"J", t1:"Argentina",     t2:"Austria",       venue:"Dallas" },
+  { ms:etMs("2026-06-22",17,0),  group:"I", t1:"France",        t2:"Iraq",          venue:"Philadelphia" },
+  { ms:etMs("2026-06-22",20,0),  group:"I", t1:"Norway",        t2:"Senegal",       venue:"New York/NJ" },
+  { ms:etMs("2026-06-22",23,0),  group:"J", t1:"Jordan",        t2:"Algeria",       venue:"San Francisco" },
+  // June 23
+  { ms:etMs("2026-06-23",13,0),  group:"K", t1:"Portugal",      t2:"Uzbekistan",    venue:"Houston" },
+  { ms:etMs("2026-06-23",16,0),  group:"L", t1:"England",       t2:"Ghana",         venue:"Boston" },
+  { ms:etMs("2026-06-23",19,0),  group:"L", t1:"Panama",        t2:"Croatia",       venue:"Toronto" },
+  { ms:etMs("2026-06-23",22,0),  group:"K", t1:"Colombia",      t2:"DR Congo",      venue:"Guadalajara" },
+  // June 24
+  { ms:etMs("2026-06-24",15,0),  group:"B", t1:"Switzerland",   t2:"Canada",        venue:"Vancouver" },
+  { ms:etMs("2026-06-24",15,0),  group:"B", t1:"Bosnia & Herz.",t2:"Qatar",         venue:"Seattle" },
+  { ms:etMs("2026-06-24",18,0),  group:"C", t1:"Brazil",        t2:"Scotland",      venue:"Miami" },
+  { ms:etMs("2026-06-24",18,0),  group:"C", t1:"Morocco",       t2:"Haiti",         venue:"Atlanta" },
+  { ms:etMs("2026-06-24",21,0),  group:"A", t1:"Mexico",        t2:"Czechia",       venue:"Mexico City" },
+  { ms:etMs("2026-06-24",21,0),  group:"A", t1:"South Korea",   t2:"South Africa",  venue:"Monterrey" },
+  // June 25
+  { ms:etMs("2026-06-25",16,0),  group:"E", t1:"Ecuador",       t2:"Germany",       venue:"New York/NJ" },
+  { ms:etMs("2026-06-25",16,0),  group:"E", t1:"Curaçao",       t2:"Cote d'Ivoire", venue:"Philadelphia" },
+  { ms:etMs("2026-06-25",19,0),  group:"F", t1:"Tunisia",       t2:"Netherlands",   venue:"Kansas City" },
+  { ms:etMs("2026-06-25",19,0),  group:"F", t1:"Japan",         t2:"Sweden",        venue:"Dallas" },
+  { ms:etMs("2026-06-25",22,0),  group:"D", t1:"USA",           t2:"Turkey",        venue:"Los Angeles" },
+  { ms:etMs("2026-06-25",22,0),  group:"D", t1:"Paraguay",      t2:"Australia",     venue:"San Francisco" },
+  // June 26
+  { ms:etMs("2026-06-26",15,0),  group:"I", t1:"Norway",        t2:"France",        venue:"Boston" },
+  { ms:etMs("2026-06-26",15,0),  group:"I", t1:"Senegal",       t2:"Iraq",          venue:"Toronto" },
+  { ms:etMs("2026-06-26",20,0),  group:"H", t1:"Uruguay",       t2:"Spain",         venue:"Guadalajara" },
+  { ms:etMs("2026-06-26",20,0),  group:"H", t1:"Cabo Verde",    t2:"Saudi Arabia",  venue:"Houston" },
+  { ms:etMs("2026-06-26",23,0),  group:"G", t1:"New Zealand",   t2:"Belgium",       venue:"Vancouver" },
+  { ms:etMs("2026-06-26",23,0),  group:"G", t1:"Egypt",         t2:"Iran",          venue:"Seattle" },
+  // June 27
+  { ms:etMs("2026-06-27",17,0),  group:"L", t1:"Panama",        t2:"England",       venue:"New York/NJ" },
+  { ms:etMs("2026-06-27",17,0),  group:"L", t1:"Croatia",       t2:"Ghana",         venue:"Philadelphia" },
+  { ms:etMs("2026-06-27",19,30), group:"K", t1:"DR Congo",      t2:"Uzbekistan",    venue:"Atlanta" },
+  { ms:etMs("2026-06-27",22,0),  group:"J", t1:"Jordan",        t2:"Argentina",     venue:"Dallas" },
+  { ms:etMs("2026-06-27",22,0),  group:"J", t1:"Algeria",       t2:"Austria",       venue:"Kansas City" },
+  { ms:etMs("2026-06-27",22,0),  group:"K", t1:"Colombia",      t2:"Portugal",      venue:"Seattle" },
+];
+
+let currentGroup = "all";
+let selectedPeople = new Set(); // empty = everyone
+
+function getTz() {
+  return document.getElementById('tzSelect').value;
+}
+
+function getEffectiveTz(match) {
+  const tz = getTz();
+  if (tz === 'local') return VENUE_TZ[match.venue] || 'America/New_York';
+  return tz;
+}
+
+function getLocalDateKey(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
+}
+
+function getLocalDateLabel(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', {
+    timeZone: tz, weekday:'long', day:'numeric', month:'long', year:'numeric'
+  });
+}
+
+function getTimeStr(ms, tz) {
+  return new Date(ms).toLocaleTimeString('en-AU', { timeZone: tz, hour:'numeric', minute:'2-digit', hour12:true });
+}
+
+function matchPassesFilters(m) {
+  if (currentGroup !== 'all' && m.group !== currentGroup) return false;
+  if (selectedPeople.size > 0) {
+    const p1 = PEOPLE[m.t1], p2 = PEOPLE[m.t2];
+    if (!selectedPeople.has(p1) && !selectedPeople.has(p2)) return false;
+  }
+  return true;
+}
+
+function renderSchedule() {
+  const schedule = document.getElementById('schedule');
+  const filtered = MATCHES.filter(matchPassesFilters);
+
+  // For "local" tz mode, we can't group by a single tz — use ET as the grouping key for ordering,
+  // but display each match in its own venue tz.
+  // For fixed tz, group by that tz's local date.
+  const tzForGrouping = getTz() === 'local' ? 'America/New_York' : getTz();
+
+  const byDay = {};
+  const dayOrder = [];
+  filtered.forEach(m => {
+    const key = getLocalDateKey(m.ms, tzForGrouping);
+    if (!byDay[key]) { byDay[key] = []; dayOrder.push(key); }
+    byDay[key].push(m);
+  });
+
+  const seen = new Set();
+  const uniqDays = dayOrder.filter(d => { if(seen.has(d)) return false; seen.add(d); return true; });
+
+  let html = '';
+  uniqDays.forEach(dayKey => {
+    const matches = byDay[dayKey];
+    // Use first match's ms and the grouping tz for the day label
+    const label = getLocalDateLabel(matches[0].ms, tzForGrouping);
+    html += `<div class="day-block"><div class="day-header">${label}</div><div class="matches-grid">`;
+
+    matches.forEach(m => {
+      const tz = getEffectiveTz(m);
+      const timeStr = getTimeStr(m.ms, tz);
+      const p1 = PEOPLE[m.t1] || '';
+      const p2 = PEOPLE[m.t2] || '';
+      const p1hl = selectedPeople.size > 0 && selectedPeople.has(p1);
+      const p2hl = selectedPeople.size > 0 && selectedPeople.has(p2);
+      const cardHl = p1hl || p2hl ? ' person-highlight' : '';
+      const venueLabel = getTz() === 'local' ? `${m.venue} (local)` : m.venue;
+
+      html += `
+        <div class="match-card${cardHl}" data-group="${m.group}">
+          <span class="match-group-badge badge-${m.group.toLowerCase()}">GRP ${m.group}</span>
+          <div class="match-teams">
+            <div class="team-row-m">
+              <span class="team-flag">${FLAGS[m.t1]||'🏳'}</span>
+              <span class="team-name">${m.t1}</span>
+              <span class="team-person${p1hl?' highlighted':''}">${p1}</span>
+            </div>
+            <div class="vs-divider">vs</div>
+            <div class="team-row-m">
+              <span class="team-flag">${FLAGS[m.t2]||'🏳'}</span>
+              <span class="team-name">${m.t2}</span>
+              <span class="team-person${p2hl?' highlighted':''}">${p2}</span>
+            </div>
+          </div>
+          <div class="match-meta">
+            <div class="match-time">${timeStr}</div>
+            <div class="match-venue">${venueLabel}</div>
+          </div>
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  schedule.innerHTML = html;
+  document.getElementById('noMatches').style.display = filtered.length === 0 ? 'block' : 'none';
+}
+
+function filterGroup(btn) {
+  document.querySelectorAll('#groupFilter button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentGroup = btn.dataset.group;
+  renderSchedule();
+}
+
+function filterPerson(btn) {
+  const person = btn.dataset.person;
+
+  if (person === 'all') {
+    // Clear all selections, activate "Everyone"
+    selectedPeople.clear();
+    document.querySelectorAll('#personFilter button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  } else {
+    // Deactivate "Everyone"
+    document.querySelector('#personFilter button[data-person="all"]').classList.remove('active');
+
+    // Toggle this person
+    if (selectedPeople.has(person)) {
+      selectedPeople.delete(person);
+      btn.classList.remove('active');
+    } else {
+      selectedPeople.add(person);
+      btn.classList.add('active');
+    }
+
+    // If nothing selected, revert to "Everyone"
+    if (selectedPeople.size === 0) {
+      document.querySelector('#personFilter button[data-person="all"]').classList.add('active');
+    }
+  }
+
+  renderSchedule();
+}
+
+renderSchedule();
+</script>
+</body>
+</html>
