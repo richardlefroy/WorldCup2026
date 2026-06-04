@@ -166,7 +166,7 @@
     <h1>⚽ World Cup '26 - Group Stage</h1> 
   </div>
   <div class="header-right">
-    <a href="groups.html" class="view-groups-btn">View groups</a>
+    
     <div class="tz-selector">
       <label>Timezone:</label>
       <select id="tzSelect" onchange="renderSchedule()">
@@ -206,8 +206,9 @@
   </div>
 
   <div class="filter-section">
+   <div class="filter-label">Filter by name</div>
     <button class="person-filter-toggle" id="personFilterToggle" onclick="togglePersonFilter()">
-      Filter by name <span class="toggle-arrow">▼</span>
+      Names <span class="toggle-arrow">▼</span>
     </button>
     <div class="person-active-chips" id="personActiveChips"></div>
     <div class="person-filter-panel" id="personFilterPanel">
