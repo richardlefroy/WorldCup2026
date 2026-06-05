@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA World Cup 2026 — Knockout Stage</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>⚽ World Cup '26</h1>
+  </div>
+  <div class="header-right">
+    <a href="index.html" class="nav-link">Group Stage</a>
+    <a href="knockout.html" class="nav-link active">Knockout</a>
+    <a href="groups.html" class="nav-link">Groups</a>
+  </div>
+</header>
+
+<div class="subheader">
+  <div class="tz-selector">
+    <label>Timezone:</label>
+    <select id="tzSelect" onchange="localStorage.setItem('wc26tz', this.value); renderSchedule()">
+      <option value="local">Local match time</option>
+      <option value="Australia/Perth" selected>Perth</option>
+      <option value="Australia/Melbourne">Melbourne</option>
+      <option value="Australia/Hobart">Hobart</option>
+      <option value="Europe/Berlin">Germany</option>
+      <option value="Europe/Rome">Italy</option>
+      <option value="Europe/London">United Kingdom</option>
+      <option value="America/Los_Angeles">Los Angeles</option>
+      <option value="Europe/Zurich">Switzerland</option>
+    </select>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="filter-section">
+    <div class="filter-label">Filter by stage</div>
+    <div class="pill-filter stage-filter" id="stageFilter">
+      <button class="active" data-stage="all" onclick="filterStage(this)">All</button>
+      <button data-stage="R32" onclick="filterStage(this)">Round of 32</button>
+      <button data-stage="R16" onclick="filterStage(this)">Round of 16</button>
+      <button data-stage="QF"  onclick="filterStage(this)">Quarter-finals</button>
+      <button data-stage="SF"  onclick="filterStage(this)">Semi-finals</button>
+      <button data-stage="TP"  onclick="filterStage(this)">Third place</button>
+      <button data-stage="F"   onclick="filterStage(this)">Final</button>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-toggle-row">
+      <button class="person-filter-toggle" id="personFilterToggle" onclick="togglePersonFilter()">
+        Filter by name <span class="toggle-arrow">▼</span>
+      </button>
+      <div class="person-active-chips" id="personActiveChips"></div>
+    </div>
+    <div class="person-filter-panel" id="personFilterPanel">
+      <div class="pill-filter person-filter" id="personFilter">
+        <button class="active" data-person="all" onclick="filterPerson(this)">Everyone</button>
+        <button data-person="Alix B" onclick="filterPerson(this)">🇺🇿 Alix B</button>
+        <button data-person="Alex L" onclick="filterPerson(this)">🇬🇭 Alex L</button>
+        <button data-person="Charlie" onclick="filterPerson(this)">🇹🇳 Charlie</button>
+        <button data-person="Claire" onclick="filterPerson(this)">🇮🇷 Claire</button>
+        <button data-person="Craig" onclick="filterPerson(this)">🇳🇿 Craig</button>
+        <button data-person="Darcy" onclick="filterPerson(this)">🇭🇹 Darcy</button>
+        <button data-person="Elliot" onclick="filterPerson(this)">🇦🇹 Elliot</button>
+        <button data-person="Emma" onclick="filterPerson(this)">🇰🇷 Emma</button>
+        <button data-person="Ewen" onclick="filterPerson(this)">🇸🇪 Ewen</button>
+        <button data-person="Finn" onclick="filterPerson(this)">🇧🇦 Finn</button>
+        <button data-person="Francesca" onclick="filterPerson(this)">🇯🇵 Francesca</button>
+        <button data-person="Georgette" onclick="filterPerson(this)">🇪🇸 Georgette</button>
+        <button data-person="James A" onclick="filterPerson(this)">🇸🇳 James A</button>
+        <button data-person="Jennifer" onclick="filterPerson(this)">🇯🇴 Jennifer</button>
+        <button data-person="Jono" onclick="filterPerson(this)">🇶🇦 Jono</button>
+        <button data-person="Joy" onclick="filterPerson(this)">🇧🇷 Joy</button>
+        <button data-person="JoyJoy" onclick="filterPerson(this)">🇨🇩 JoyJoy</button>
+        <button data-person="Katy" onclick="filterPerson(this)">🇲🇽 Katy</button>
+        <button data-person="Khrob" onclick="filterPerson(this)">🇨🇿 Khrob</button>
+        <button data-person="Leah" onclick="filterPerson(this)">🇨🇻 Leah</button>
+        <button data-person="Lily" onclick="filterPerson(this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Lily</button>
+        <button data-person="Louis" onclick="filterPerson(this)">🇲🇦 Louis</button>
+        <button data-person="Lucy" onclick="filterPerson(this)">🇧🇪 Lucy</button>
+        <button data-person="Massimo" onclick="filterPerson(this)">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Massimo</button>
+        <button data-person="Matty" onclick="filterPerson(this)">🇦🇷 Matty</button>
+        <button data-person="Mike L" onclick="filterPerson(this)">🇵🇦 Mike L</button>
+        <button data-person="Mike S" onclick="filterPerson(this)">🇵🇹 Mike S</button>
+        <button data-person="Mila" onclick="filterPerson(this)">🇭🇷 Mila</button>
+        <button data-person="Mim" onclick="filterPerson(this)">🇮🇶 Mim</button>
+        <button data-person="Nic T" onclick="filterPerson(this)">🇪🇨 Nic</button>
+        <button data-person="Olive E" onclick="filterPerson(this)">🇨🇮 Olive E</button>
+        <button data-person="Olive P" onclick="filterPerson(this)">🇵🇾 Olive P</button>
+        <button data-person="Renate" onclick="filterPerson(this)">🇨🇭 Renate</button>
+        <button data-person="Richie" onclick="filterPerson(this)">🇺🇾 Richie</button>
+        <button data-person="Rob" onclick="filterPerson(this)">🇹🇷 Rob</button>
+        <button data-person="Rod" onclick="filterPerson(this)">🇿🇦 Rod</button>
+        <button data-person="Rosa" onclick="filterPerson(this)">🇦🇺 Rosa</button>
+        <button data-person="Sal Edmonds" onclick="filterPerson(this)">🇨🇴 Sal E</button>
+        <button data-person="Sarah" onclick="filterPerson(this)">🇺🇸 Sarah</button>
+        <button data-person="Seamus" onclick="filterPerson(this)">🇸🇦 Seamus</button>
+        <button data-person="Sophie" onclick="filterPerson(this)">🇳🇱 Sophie</button>
+        <button data-person="Susan" onclick="filterPerson(this)">🇪🇬 Susan</button>
+        <button data-person="Taki" onclick="filterPerson(this)">🇫🇷 Taki</button>
+        <button data-person="Ted" onclick="filterPerson(this)">🇨🇦 Ted</button>
+        <button data-person="Tenille" onclick="filterPerson(this)">🇩🇿 Tenille</button>
+        <button data-person="Tessa" onclick="filterPerson(this)">🇳🇴 Tessa</button>
+        <button data-person="Wilfy" onclick="filterPerson(this)">🇨🇼 Wilfy</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="schedule"></div>
+  <div class="no-matches" id="noMatches">No matches found for the current filters.</div>
+
+
+</div>
+
+</div>
+
+<script>
+// ET = UTC-4 in summer
+function etMs(y, mo, d, h, m) {
+  return Date.UTC(y, mo - 1, d, h + 4, m || 0);
+}
+
+const STAGE_LABELS = {
+  R32: "Round of 32",
+  R16: "Round of 16",
+  QF:  "Quarter-final",
+  SF:  "Semi-final",
+  TP:  "Third place",
+  F:   "Final",
+};
+
+const MATCHES = [
+  // ── Round of 32 ──────────────────────────────────────────────
+  { ms: etMs(2026,6,28,15,0),  stage:"R32", t1:"Runner-up Group A",            t2:"Runner-up Group B",            venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,6,29,13,0),  stage:"R32", t1:"Winner Group C",               t2:"Runner-up Group F",            venue:"NRG Stadium, Houston" },
+  { ms: etMs(2026,6,29,16,30), stage:"R32", t1:"Winner Group E",               t2:"3rd (A/B/C/D/F)",              venue:"Gillette Stadium, Boston" },
+  { ms: etMs(2026,6,29,21,0),  stage:"R32", t1:"Winner Group F",               t2:"Runner-up Group C",            venue:"Estadio BBVA, Monterrey" },
+  { ms: etMs(2026,6,30,13,0),  stage:"R32", t1:"Runner-up Group E",            t2:"Runner-up Group I",            venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,6,30,17,0),  stage:"R32", t1:"Winner Group I",               t2:"3rd (C/D/F/G/H)",              venue:"MetLife Stadium, New York/NJ" },
+  { ms: etMs(2026,6,30,21,0),  stage:"R32", t1:"Winner Group A",               t2:"3rd (C/E/F/H/I)",              venue:"Estadio Azteca, Mexico City" },
+  { ms: etMs(2026,7, 1,12,0),  stage:"R32", t1:"Winner Group L",               t2:"3rd (E/H/I/J/K)",              venue:"Mercedes-Benz Stadium, Atlanta" },
+  { ms: etMs(2026,7, 1,16,0),  stage:"R32", t1:"Winner Group G",               t2:"3rd (A/E/H/I/J)",              venue:"Lumen Field, Seattle" },
+  { ms: etMs(2026,7, 1,20,0),  stage:"R32", t1:"Winner Group D",               t2:"3rd (B/E/F/I/J)",              venue:"Levi's Stadium, San Francisco" },
+  { ms: etMs(2026,7, 2,15,0),  stage:"R32", t1:"Winner Group H",               t2:"Runner-up Group J",            venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,7, 2,19,0),  stage:"R32", t1:"Runner-up Group K",            t2:"Runner-up Group L",            venue:"BMO Field, Toronto" },
+  { ms: etMs(2026,7, 2,23,0),  stage:"R32", t1:"Winner Group B",               t2:"3rd (E/F/G/I/J)",              venue:"BC Place, Vancouver" },
+  { ms: etMs(2026,7, 3,14,0),  stage:"R32", t1:"Runner-up Group D",            t2:"Runner-up Group G",            venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7, 3,18,0),  stage:"R32", t1:"Winner Group J",               t2:"Runner-up Group H",            venue:"Hard Rock Stadium, Miami" },
+  { ms: etMs(2026,7, 3,21,30), stage:"R32", t1:"Winner Group K",               t2:"3rd (D/E/I/J/L)",              venue:"Arrowhead Stadium, Kansas City" },
+  // ── Round of 16 ──────────────────────────────────────────────
+  { ms: etMs(2026,7, 4,13,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"NRG Stadium, Houston" },
+  { ms: etMs(2026,7, 4,17,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"Lincoln Financial Field, Philadelphia" },
+  { ms: etMs(2026,7, 5,16,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"MetLife Stadium, New York/NJ" },
+  { ms: etMs(2026,7, 5,20,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"Estadio Azteca, Mexico City" },
+  { ms: etMs(2026,7, 6,15,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7, 6,20,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"Lumen Field, Seattle" },
+  { ms: etMs(2026,7, 7,12,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"Mercedes-Benz Stadium, Atlanta" },
+  { ms: etMs(2026,7, 7,16,0),  stage:"R16", t1:"TBD",  t2:"TBD",  venue:"BC Place, Vancouver" },
+  // ── Quarter-finals ───────────────────────────────────────────
+  { ms: etMs(2026,7, 9,16,0),  stage:"QF",  t1:"TBD",  t2:"TBD",  venue:"Gillette Stadium, Boston" },
+  { ms: etMs(2026,7,10,15,0),  stage:"QF",  t1:"TBD",  t2:"TBD",  venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,7,11,17,0),  stage:"QF",  t1:"TBD",  t2:"TBD",  venue:"Hard Rock Stadium, Miami" },
+  { ms: etMs(2026,7,11,21,0),  stage:"QF",  t1:"TBD",  t2:"TBD",  venue:"Arrowhead Stadium, Kansas City" },
+  // ── Semi-finals ──────────────────────────────────────────────
+  { ms: etMs(2026,7,14,15,0),  stage:"SF",  t1:"TBD",  t2:"TBD",  venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7,15,15,0),  stage:"SF",  t1:"TBD",  t2:"TBD",  venue:"Mercedes-Benz Stadium, Atlanta" },
+  // ── Third place ──────────────────────────────────────────────
+  { ms: etMs(2026,7,18,17,0),  stage:"TP",  t1:"TBD",  t2:"TBD",  venue:"Hard Rock Stadium, Miami" },
+  // ── Final ────────────────────────────────────────────────────
+  { ms: etMs(2026,7,19,15,0),  stage:"F",   t1:"TBD",  t2:"TBD",  venue:"MetLife Stadium, New York/NJ" },
+];
+
+const PEOPLE = {
+  "Mexico":"Katy","South Africa":"Rod","South Korea":"Emma","Czechia":"Khrob",
+  "Canada":"Ted","Bosnia & Herz.":"Finn","Qatar":"Jono","Switzerland":"Renate",
+  "Brazil":"Joy","Morocco":"Louis","Haiti":"Darcy","Scotland":"Massimo",
+  "USA":"Sarah","Paraguay":"Olive P","Australia":"Rosa","Turkey":"Rob",
+  "Germany":"Ben","Curaçao":"Wilfy","Cote d'Ivoire":"Olive E","Ecuador":"Nic T",
+  "Netherlands":"Sophie","Japan":"Francesca","Sweden":"Ewen","Tunisia":"Charlie",
+  "Belgium":"Lucy","Egypt":"Susan","Iran":"Claire","New Zealand":"Craig",
+  "Spain":"Georgette","Cabo Verde":"Leah","Saudi Arabia":"Seamus","Uruguay":"Richie",
+  "France":"Taki","Senegal":"James A","Iraq":"Mim","Norway":"Tessa",
+  "Argentina":"Matty","Algeria":"Tenille","Austria":"Elliot","Jordan":"Jennifer",
+  "Portugal":"Mike S","DR Congo":"JoyJoy","Uzbekistan":"Alix B","Colombia":"Sal Edmonds",
+  "England":"Lily","Croatia":"Mila","Ghana":"Alex L","Panama":"Mike L"
+};
+
+const FLAGS = {
+  "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷","Czechia":"🇨🇿",
+  "Canada":"🇨🇦","Bosnia & Herz.":"🇧🇦","Qatar":"🇶🇦","Switzerland":"🇨🇭",
+  "Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "USA":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺","Turkey":"🇹🇷",
+  "Germany":"🇩🇪","Curaçao":"🇨🇼","Cote d'Ivoire":"🇨🇮","Ecuador":"🇪🇨",
+  "Netherlands":"🇳🇱","Japan":"🇯🇵","Sweden":"🇸🇪","Tunisia":"🇹🇳",
+  "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+  "Spain":"🇪🇸","Cabo Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+  "France":"🇫🇷","Senegal":"🇸🇳","Iraq":"🇮🇶","Norway":"🇳🇴",
+  "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
+  "Portugal":"🇵🇹","DR Congo":"🇨🇩","Uzbekistan":"🇺🇿","Colombia":"🇨🇴",
+  "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦"
+};
+
+const VENUE_TZ = {
+  "SoFi Stadium, LA":                        "America/Los_Angeles",
+  "NRG Stadium, Houston":                    "America/Chicago",
+  "Gillette Stadium, Boston":                "America/New_York",
+  "Estadio BBVA, Monterrey":                 "America/Monterrey",
+  "AT&T Stadium, Dallas":                    "America/Chicago",
+  "MetLife Stadium, New York/NJ":            "America/New_York",
+  "Estadio Azteca, Mexico City":             "America/Mexico_City",
+  "Mercedes-Benz Stadium, Atlanta":          "America/New_York",
+  "Lumen Field, Seattle":                    "America/Los_Angeles",
+  "Levi's Stadium, San Francisco":           "America/Los_Angeles",
+  "BMO Field, Toronto":                      "America/Toronto",
+  "BC Place, Vancouver":                     "America/Vancouver",
+  "Hard Rock Stadium, Miami":                "America/New_York",
+  "Arrowhead Stadium, Kansas City":          "America/Chicago",
+  "Lincoln Financial Field, Philadelphia":   "America/New_York",
+};
+
+const ESPN_NAME = {
+  "Cote d'Ivoire": "Ivory Coast",
+  "Bosnia & Herz.": "Bosnia and Herzegovina",
+  "Cabo Verde": "Cape Verde",
+  "DR Congo": "DR Congo",
+  "Czechia": "Czech Republic",
+  "USA": "United States",
+};
+function espnName(t) { return ESPN_NAME[t] || t; }
+
+let SCORES = {};
+let liveRefreshTimer = null;
+function matchKey(m) { return m.t1 + '|' + m.t2; }
+
+async function fetchScores() {
+  try {
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard';
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const data = await res.json();
+    const events = data.events || [];
+    const newScores = {};
+    events.forEach(ev => {
+      const comp = ev.competitions?.[0];
+      if (!comp) return;
+      const teams = comp.competitors || [];
+      if (teams.length < 2) return;
+      const home = teams.find(t => t.homeAway === 'home') || teams[0];
+      const away = teams.find(t => t.homeAway === 'away') || teams[1];
+      const homeName = home.team?.displayName || home.team?.name || '';
+      const awayName = away.team?.displayName || away.team?.name || '';
+      const statusType = ev.status?.type?.name || 'STATUS_SCHEDULED';
+      const rawClock = ev.status?.displayClock || '';
+      const period = ev.status?.period || 0;
+      let status = 'pre';
+      if (statusType === 'STATUS_FINAL' || statusType === 'STATUS_FULL_TIME') status = 'ft';
+      else if (statusType === 'STATUS_IN_PROGRESS' || statusType === 'STATUS_HALFTIME') status = 'live';
+      let clockDisplay = '';
+      if (status === 'live') {
+        if (statusType === 'STATUS_HALFTIME') {
+          clockDisplay = 'HT';
+        } else {
+          const mins = parseInt(rawClock.split(':')[0], 10) || 0;
+          const regularMax = period === 1 ? 45 : 90;
+          clockDisplay = mins > regularMax ? regularMax + '+' + (mins - regularMax) + "'" : mins + "'";
+        }
+      }
+      const s1 = parseInt(home.score ?? '0', 10);
+      const s2 = parseInt(away.score ?? '0', 10);
+      MATCHES.forEach(m => {
+        const e1 = espnName(m.t1), e2 = espnName(m.t2);
+        if ((homeName.includes(e1) || e1.includes(homeName)) && (awayName.includes(e2) || e2.includes(awayName))) {
+          newScores[matchKey(m)] = { s1, s2, status, clock: clockDisplay };
+        } else if ((homeName.includes(e2) || e2.includes(homeName)) && (awayName.includes(e1) || e1.includes(awayName))) {
+          newScores[matchKey(m)] = { s1: s2, s2: s1, status, clock: clockDisplay };
+        }
+      });
+    });
+    SCORES = newScores;
+    renderSchedule();
+    const hasLive = Object.values(SCORES).some(s => s.status === 'live');
+    clearTimeout(liveRefreshTimer);
+    if (hasLive) liveRefreshTimer = setTimeout(fetchScores, 60000);
+  } catch (e) {}
+}
+
+let currentStage = "all";
+let selectedPeople = new Set();
+
+function formatCountdown(ms) {
+  const diff = ms - Date.now();
+  if (diff <= 0) return 'Starting now';
+  const totalMins = Math.floor(diff / 60000);
+  const days  = Math.floor(totalMins / 1440);
+  const hours = Math.floor((totalMins % 1440) / 60);
+  const mins  = totalMins % 60;
+  const parts = [];
+  if (days)  parts.push(days  + (days  === 1 ? ' day'    : ' days'));
+  if (hours) parts.push(hours + (hours === 1 ? ' hour'   : ' hours'));
+  if (mins || parts.length === 0) parts.push(mins + (mins === 1 ? ' minute' : ' minutes'));
+  return 'Begins in ' + parts.join(' ');
+}
+function tickCountdowns() {
+  document.querySelectorAll('.match-card-countdown[data-ms]').forEach(el => {
+    el.textContent = formatCountdown(parseInt(el.dataset.ms, 10));
+  });
+}
+setInterval(tickCountdowns, 30000);
+
+function getTz() { return document.getElementById('tzSelect').value; }
+
+function getEffectiveTz(match) {
+  const tz = getTz();
+  if (tz === 'local') return VENUE_TZ[match.venue] || 'America/New_York';
+  return tz;
+}
+
+function getLocalDateKey(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
+}
+function getLocalDateLabel(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', {
+    timeZone: tz, weekday:'long', day:'numeric', month:'long', year:'numeric'
+  });
+}
+function getTimeStr(ms, tz) {
+  return new Date(ms).toLocaleTimeString('en-AU', { timeZone: tz, hour:'numeric', minute:'2-digit', hour12:true });
+}
+
+function matchPassesFilters(m) {
+  if (currentStage !== 'all' && m.stage !== currentStage) return false;
+  return true;
+}
+
+function venueCity(venue) {
+  // Extract just the city from "Stadium Name, City" format
+  const comma = venue.lastIndexOf(',');
+  return comma !== -1 ? venue.slice(comma + 1).trim() : venue;
+}
+
+function renderSchedule() {
+  const tzForGrouping = getTz() === 'local' ? 'America/New_York' : getTz();
+  const filtered = MATCHES.filter(matchPassesFilters);
+
+  const byDay = {};
+  const dayOrder = [];
+  filtered.forEach(m => {
+    const key = getLocalDateKey(m.ms, tzForGrouping);
+    if (!byDay[key]) { byDay[key] = []; dayOrder.push(key); }
+    byDay[key].push(m);
+  });
+
+  const seen = new Set();
+  const uniqDays = dayOrder.filter(d => { if (seen.has(d)) return false; seen.add(d); return true; });
+
+  let html = '';
+  uniqDays.forEach(dayKey => {
+    const matches = byDay[dayKey];
+    const label = getLocalDateLabel(matches[0].ms, tzForGrouping);
+    html += `<div class="day-block"><div class="day-header">${label}</div><div class="matches-grid">`;
+
+    matches.forEach(m => {
+      const timeStr = getTimeStr(m.ms, getEffectiveTz(m));
+      const isTbd1 = m.t1 === 'TBD' || m.t1.startsWith('Winner') || m.t1.startsWith('Runner') || m.t1.startsWith('Loser') || m.t1.startsWith('3rd');
+      const isTbd2 = m.t2 === 'TBD' || m.t2.startsWith('Winner') || m.t2.startsWith('Runner') || m.t2.startsWith('Loser') || m.t2.startsWith('3rd');
+      const p1 = PEOPLE[m.t1] || '';
+      const p2 = PEOPLE[m.t2] || '';
+      const p1hl = selectedPeople.size > 0 && selectedPeople.has(p1);
+      const p2hl = selectedPeople.size > 0 && selectedPeople.has(p2);
+      const sc = SCORES[matchKey(m)];
+      const cardHl = p1hl || p2hl ? ' person-highlight' : '';
+      const city = venueCity(m.venue);
+
+      const flag1 = isTbd1 ? '' : (FLAGS[m.t1] || '🏳');
+      const flag2 = isTbd2 ? '' : (FLAGS[m.t2] || '🏳');
+
+      let topHtml = '', bottomHtml = '', s1Html = '', s2Html = '', metaHtml = '';
+
+      if (sc && (sc.status === 'live' || sc.status === 'ft')) {
+        const isLive = sc.status === 'live';
+        let pillLabel;
+        if (!isLive) { pillLabel = 'Match Finished'; }
+        else if (sc.clock === 'HT') { pillLabel = 'Half Time'; }
+        else if (sc.clock) { pillLabel = `Live · ${sc.clock}`; }
+        else { pillLabel = 'Live'; }
+        const statusClass = isLive ? 'live' : 'ft';
+        topHtml = `<div class="match-card-status"><span class="match-status-pill ${statusClass}">${pillLabel}</span></div>`;
+        s1Html = `<span class="score-num">${sc.s1}</span>`;
+        s2Html = `<span class="score-num">${sc.s2}</span>`;
+        metaHtml = `<div class="match-venue">${city}</div>`;
+      } else {
+        bottomHtml = `<div class="match-card-countdown" data-ms="${m.ms}">${formatCountdown(m.ms)}</div>`;
+        metaHtml = `<div class="match-time">${timeStr}</div><div class="match-venue">${city}</div>`;
+      }
+
+      html += `<div class="match-card${cardHl}" data-stage="${m.stage}">
+        ${topHtml}
+        <span class="match-stage-badge badge-${m.stage === 'F' ? 'final' : m.stage.toLowerCase()}">${STAGE_LABELS[m.stage] || m.stage}</span>
+        <div class="match-teams">
+          <div class="team-row-m">
+            <span class="team-flag">${flag1}</span>
+            <span class="team-name${isTbd1 ? ' tbd' : ''}">${m.t1}</span>
+            <span class="team-person${p1hl ? ' highlighted' : ''}">${p1}</span>
+            ${s1Html}
+          </div>
+          <div class="vs-divider">vs</div>
+          <div class="team-row-m">
+            <span class="team-flag">${flag2}</span>
+            <span class="team-name${isTbd2 ? ' tbd' : ''}">${m.t2}</span>
+            <span class="team-person${p2hl ? ' highlighted' : ''}">${p2}</span>
+            ${s2Html}
+          </div>
+        </div>
+        <div class="match-meta">${metaHtml}</div>
+        ${bottomHtml}
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+
+  document.getElementById('schedule').innerHTML = html;
+  document.getElementById('noMatches').style.display = filtered.length === 0 ? 'block' : 'none';
+}
+
+function filterStage(btn) {
+  document.querySelectorAll('#stageFilter button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStage = btn.dataset.stage;
+  renderSchedule();
+}
+
+function togglePersonFilter() {
+  const panel = document.getElementById('personFilterPanel');
+  const toggle = document.getElementById('personFilterToggle');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+}
+
+function collapsePersonFilter() {
+  document.getElementById('personFilterPanel').classList.remove('open');
+  document.getElementById('personFilterToggle').classList.remove('open');
+}
+
+function updateActiveChips() {
+  const container = document.getElementById('personActiveChips');
+  while (container.firstChild) container.removeChild(container.firstChild);
+  selectedPeople.forEach(person => {
+    const sourceBtn = document.querySelector('#personFilter button[data-person="' + person + '"]');
+    const label = sourceBtn ? sourceBtn.textContent : person;
+    const chip = document.createElement('button');
+    chip.className = 'active';
+    chip.style.cssText = 'padding:5px 12px;border-radius:20px;border:1px solid #111;background:#333;color:#fff;font-size:12px;font-weight:500;cursor:pointer;';
+    chip.textContent = label + ' ✕';
+    chip.addEventListener('click', () => removePerson(person));
+    container.appendChild(chip);
+  });
+}
+
+function removePerson(person) {
+  selectedPeople.delete(person);
+  const btn = document.querySelector('#personFilter button[data-person="' + person + '"]');
+  if (btn) btn.classList.remove('active');
+  if (selectedPeople.size === 0) {
+    document.querySelector('#personFilter button[data-person="all"]').classList.add('active');
+  }
+  updateActiveChips();
+  renderSchedule();
+}
+
+function filterPerson(btn) {
+  const person = btn.dataset.person;
+  if (person === 'all') {
+    selectedPeople.clear();
+    document.querySelectorAll('#personFilter button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateActiveChips();
+    collapsePersonFilter();
+  } else {
+    document.querySelector('#personFilter button[data-person="all"]').classList.remove('active');
+    if (selectedPeople.has(person)) {
+      selectedPeople.delete(person);
+      btn.classList.remove('active');
+    } else {
+      selectedPeople.add(person);
+      btn.classList.add('active');
+    }
+    if (selectedPeople.size === 0) {
+      document.querySelector('#personFilter button[data-person="all"]').classList.add('active');
+    }
+    updateActiveChips();
+    collapsePersonFilter();
+  }
+  renderSchedule();
+}
+
+const savedTz = localStorage.getItem('wc26tz');
+if (savedTz) { const sel = document.getElementById('tzSelect'); if ([...sel.options].some(o => o.value === savedTz)) sel.value = savedTz; }
+renderSchedule();
+fetchScores();
+</script>
+</body>
+</html>
