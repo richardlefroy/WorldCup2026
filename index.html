@@ -20,6 +20,7 @@
 </header>
 
 <div class="subheader">
+  <button class="upcoming-btn" onclick="scrollToUpcoming()">⚡ Upcoming matches</button>
   <div class="tz-selector">
     <label>Timezone:</label>
     <select id="tzSelect" onchange="localStorage.setItem('wc26tz', this.value); renderSchedule()">
@@ -514,7 +515,7 @@ function renderSchedule() {
     const matches = byDay[dayKey];
     // Use first match's ms and the grouping tz for the day label
     const label = getLocalDateLabel(matches[0].ms, tzForGrouping);
-    html += `<div class="day-block"><div class="day-header">${label}</div><div class="matches-grid">`;
+    html += `<div class="day-block" data-ms="${matches[0].ms}"><div class="day-header">${label}</div><div class="matches-grid">`;
 
     matches.forEach(m => {
       const tz = getEffectiveTz(m);
@@ -689,6 +690,26 @@ function filterPerson(btn) {
 
 const savedTz = localStorage.getItem('wc26tz');
 if (savedTz) { const sel = document.getElementById('tzSelect'); if ([...sel.options].some(o => o.value === savedTz)) sel.value = savedTz; }
+function scrollToUpcoming() {
+  const now = Date.now();
+  const blocks = document.querySelectorAll('.day-block[data-ms]');
+  let target = null;
+  for (const block of blocks) {
+    const ms = parseInt(block.dataset.ms, 10);
+    if (ms > now || block.querySelector('.match-card-countdown')) {
+      target = block;
+      break;
+    }
+  }
+  if (!target) target = blocks[blocks.length - 1];
+  if (!target) return;
+  // Measure all sticky elements so we don't scroll under them
+  const stickyOffset = Array.from(document.querySelectorAll('header, .subheader'))
+    .reduce((sum, el) => sum + el.offsetHeight, 0);
+  const top = target.getBoundingClientRect().top + window.scrollY - stickyOffset - 12;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
 renderSchedule();
 fetchScores();
 </script>
