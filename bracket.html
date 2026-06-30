@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIFA World Cup 2026 — Bracket</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.bracket-page {
+  padding: 1.25rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bracket-meta {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bracket-title-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.bracket-status {
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 0.03em;
+}
+#bracket-svg-wrap {
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 1;
+}
+#bracket-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.b-line      { fill: none; stroke: #aaa; stroke-width: 1.5; }
+.b-line.won  { stroke: #f7c948; stroke-width: 2.2; }
+.b-line.live { stroke: #22c55e; stroke-width: 2; }
+.b-disc      { cursor: default; }
+.b-disc.dim  { opacity: 0.28; }
+.b-ring      { fill: none; }
+.b-ring.dim  { opacity: 0.22; }
+.b-label {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  fill: #bbb;
+}
+.b-label.active { fill: #666; }
+.b-label.won    { fill: #b89010; }
+.b-label-person { fill: #999; font-weight: 400; font-size: 7.5px; }
+.b-empty-disc   { fill: #ece9e4; stroke: #999; stroke-width: 1.5; }
+.b-empty-qs {
+  fill: #ccc;
+  font-family: -apple-system, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.bracket-legend {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: #888;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.bracket-legend span { display: flex; align-items: center; gap: 5px; }
+.bracket-legend i {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.leg-active { background: #555; }
+.leg-elim   { background: #ddd; border: 1px solid #ccc; }
+.leg-won    { background: #f7c948; }
+.leg-live   { background: #22c55e; }
+#b-tip {
+  position: fixed;
+  background: #111;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s;
+  z-index: 300;
+  white-space: nowrap;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>⚽ World Cup '26</h1>
+  </div>
+  <div class="header-right">
+    <a href="groupstage.html" class="nav-link">Group Stage</a>
+    <a href="index.html" class="nav-link">Knockout</a>
+    <a href="groups.html" class="nav-link">Groups</a>
+    <a href="bracket.html" class="nav-link active">Bracket</a>
+  </div>
+</header>
+
+<div class="bracket-page">
+  <div id="bracketStatus" style="display:none"></div>
+  <div id="bracket-svg-wrap">
+    <svg id="bracket-svg" viewBox="-360 -360 720 720"></svg>
+  </div>
+</div>
+
+<div id="b-tip"></div>
+
+<script>
+'use strict';
+
+// =============================================================================
+// BRACKET MATCH DATA
+// ESPN IDs verified against live API. Adjacent pairs in R32[] share an R16 node.
+// Clockwise slot order from top:
+//   R32[0]  slots 0,1   Germany vs Paraguay
+//   R32[1]  slots 2,3   Brazil vs Japan
+//   R32[2]  slots 4,5   Ivory Coast vs Norway
+//   R32[3]  slots 6,7   Mexico vs Ecuador
+//   R32[4]  slots 8,9   England vs DR Congo
+//   R32[5]  slots 10,11 Argentina vs Cape Verde
+//   R32[6]  slots 12,13 Australia vs Egypt
+//   R32[7]  slots 14,15 Switzerland vs Algeria
+//   R32[8]  slots 16,17 Colombia vs Ghana
+//   R32[9]  slots 18,19 Belgium vs Senegal
+//   R32[10] slots 20,21 USA vs Bosnia
+//   R32[11] slots 22,23 Spain vs Austria
+//   R32[12] slots 24,25 Portugal vs Croatia
+//   R32[13] slots 26,27 Morocco vs Netherlands
+//   R32[14] slots 28,29 Canada vs South Africa
+//   R32[15] slots 30,31 France vs Sweden
+// =============================================================================
+
+var R32 = [
+  '760489', // 0  Germany vs Paraguay
+  '760487', // 1  Brazil vs Japan
+  '760490', // 2  Ivory Coast vs Norway
+  '760491', // 3  Mexico vs Ecuador
+  '760495', // 4  England vs DR Congo
+  '760500', // 5  Argentina vs Cape Verde
+  '760499', // 6  Australia vs Egypt
+  '760498', // 7  Switzerland vs Algeria
+  '760501', // 8  Colombia vs Ghana
+  '760493', // 9  Belgium vs Senegal
+  '760494', // 10 USA vs Bosnia
+  '760497', // 11 Spain vs Austria
+  '760496', // 12 Portugal vs Croatia
+  '760488', // 13 Morocco vs Netherlands
+  '760486', // 14 Canada vs South Africa
+  '760492', // 15 France vs Sweden
+];
+
+// R16[i] = winner of R32[i*2] vs winner of R32[i*2+1]
+var R16 = [
+  '760503', // 0  winner R32[0] vs winner R32[1]
+  '760504', // 1  winner R32[2] vs winner R32[3]
+  '760505', // 2  winner R32[4] vs winner R32[5]
+  '760509', // 3  winner R32[6] vs winner R32[7]
+  '760506', // 4  winner R32[8] vs winner R32[9]
+  '760507', // 5  winner R32[10] vs winner R32[11]
+  '760508', // 6  winner R32[12] vs winner R32[13]
+  '760502', // 7  winner R32[14] vs winner R32[15]
+];
+
+// QF[i] = winner of R16[i*2] vs winner of R16[i*2+1]
+var QF = [
+  '760510', // 0  winner R16[0] vs winner R16[1]
+  '760511', // 1  winner R16[2] vs winner R16[3]
+  '760512', // 2  winner R16[4] vs winner R16[5]
+  '760513', // 3  winner R16[6] vs winner R16[7]
+];
+
+// SF[i] = winner of QF[i*2] vs winner of QF[i*2+1]
+var SF = [
+  '760514', // 0  winner QF[0] vs winner QF[1]
+  '760515', // 1  winner QF[2] vs winner QF[3]
+];
+
+var FINAL_ID = '760517';
+
+// =============================================================================
+// GEOMETRY
+// 32 team slots evenly spaced around 360°. Each slot = 11.25°.
+// Slot 0 is offset by -half-slot so pair (0,1) straddles 12 o'clock.
+//
+// Node angles:
+//   R16 node i  = midpoint of slots i*2 and i*2+1  = i * 22.5°
+//   QF  node i  = midpoint of R16 nodes i*2 and i*2+1
+//   SF  node i  = midpoint of QF  nodes i*2 and i*2+1
+//
+// All lines are straight segments: no curves, no elbows.
+// =============================================================================
+
+var SLOT_DEG = 360 / 32; // 11.25
+
+function slotAngle(s) {
+  // offset by +0.5 so pairs sit at slot centres, finals align horizontally
+  return (s + 0.5) * SLOT_DEG;
+}
+
+// joinAngle(i): angle of the join node for R32 match i
+// = midpoint of slot i*2 and slot i*2+1
+// slotAngle(i*2) = (i*2 - 0.5)*SLOT_DEG, slotAngle(i*2+1) = (i*2 + 0.5)*SLOT_DEG
+// midpoint = i * 2 * SLOT_DEG
+function joinAngle(i) {
+  return (i * 2 + 1) * SLOT_DEG;
+}
+
+// qfAngle(i): midpoint of the 2 join nodes that feed R16 match i
+// R16[i] covers join nodes i*2 and i*2+1
+function qfAngle(i) {
+  return (joinAngle(i * 2) + joinAngle(i * 2 + 1)) / 2;
+}
+
+// sfAngle(i): midpoint of the 2 QF nodes that feed SF match i
+// SF node i sits between qfPos[i*2] and qfPos[i*2+1]
+// qfAngle(i*2) and qfAngle(i*2+1) are each midpoints of 2 join nodes
+function sfAngle(i) {
+  return (qfAngle(i * 2) + qfAngle(i * 2 + 1)) / 2;
+}
+
+// finAngle(i): midpoint of the 2 SF nodes that feed the final
+// fin node i sits between sfPos[i*2] and sfPos[i*2+1]
+function finAngle(i) {
+  return (sfAngle(i * 2) + sfAngle(i * 2 + 1)) / 2;
+}
+
+// Keep r16Angle as an alias for joinAngle (used in join node position array)
+function r16Angle(i) {
+  return joinAngle(i);
+}
+
+// Convert polar (degrees from top, clockwise) + radius to x,y
+function polar(deg, r) {
+  var rad = (deg - 90) * Math.PI / 180;
+  return { x: r * Math.cos(rad), y: r * Math.sin(rad) };
+}
+
+var RADII = { r32: 300, r16: 232, qf: 167, sf: 107, fin: 55 };
+var NR    = { r32: 20,  r16: 18,  qf: 16,  sf: 15,  fin: 17 };
+
+// =============================================================================
+// TEAM METADATA
+// =============================================================================
+
+var ESPN_NORM = {
+  'United States':       'USA',
+  'Ivory Coast':         'CIV',
+  "Cote d'Ivoire":       'CIV',
+  'Bosnia-Herzegovina':  'BIH',
+  'Cape Verde':          'CPV',
+  'Congo DR':            'COD',
+  'South Korea':         'KOR',
+};
+
+function normName(n) {
+  return ESPN_NORM[n] || n;
+}
+
+// ISO 3166-1 alpha-2 codes for flagcdn.com
+var FLAG_ISO = {
+  'Argentina':    'ar', 'Brazil':       'br', 'Uruguay':      'uy',
+  'Colombia':     'co', 'Ecuador':      'ec', 'Paraguay':     'py',
+  'USA':          'us', 'Mexico':       'mx', 'Canada':       'ca',
+  'France':       'fr', 'Spain':        'es', 'Portugal':     'pt',
+  'Germany':      'de', 'Netherlands':  'nl', 'England':      'gb-eng',
+  'Belgium':      'be', 'Austria':      'at', 'Croatia':      'hr',
+  'Switzerland':  'ch', 'Sweden':       'se', 'Norway':       'no',
+  'Morocco':      'ma', 'Senegal':      'sn', 'CIV':          'ci',
+  'Egypt':        'eg', 'Algeria':      'dz', 'Ghana':        'gh',
+  'Japan':        'jp', 'KOR':          'kr', 'Australia':    'au',
+  'BIH':          'ba', 'CPV':          'cv', 'COD':          'cd',
+  'South Africa': 'za',
+};
+
+function flagUrl(name) {
+  var key = normName(name);
+  var iso = FLAG_ISO[key] || FLAG_ISO[name];
+  if (!iso) return null;
+  return 'https://flagcdn.com/w80/' + iso + '.png';
+}
+
+var SHORT = {
+  'Argentina':'ARG', 'Brazil':'BRA', 'Uruguay':'URU', 'Colombia':'COL',
+  'Ecuador':'ECU', 'Paraguay':'PAR', 'USA':'USA', 'Mexico':'MEX',
+  'Canada':'CAN', 'France':'FRA', 'Spain':'ESP', 'Portugal':'POR',
+  'Germany':'GER', 'Netherlands':'NED', 'England':'ENG', 'Belgium':'BEL',
+  'Austria':'AUT', 'Croatia':'CRO', 'Switzerland':'SUI', 'Sweden':'SWE',
+  'Norway':'NOR', 'Morocco':'MAR', 'Senegal':'SEN', 'CIV':'CIV',
+  'Egypt':'EGY', 'Algeria':'ALG', 'Ghana':'GHA', 'Japan':'JPN',
+  'KOR':'KOR', 'Australia':'AUS', 'BIH':'BIH', 'CPV':'CPV',
+  'COD':'COD', 'South Africa':'RSA', 'South Korea':'KOR',
+  'United States':'USA', 'Ivory Coast':'CIV', "Cote d'Ivoire":'CIV',
+  'Bosnia-Herzegovina':'BIH', 'Cape Verde':'CPV', 'Congo DR':'COD',
+};
+
+function shortName(name) {
+  if (!name) return '?';
+  var key = normName(name);
+  return SHORT[key] || SHORT[name] || name.slice(0, 3).toUpperCase();
+}
+
+// =============================================================================
+// SCORE DATA  (populated by ESPN fetch)
+// =============================================================================
+
+var SCORES = {};
+
+function isPlaceholder(n) {
+  return !n || n === 'TBD' || /^(Group|Round of|Quarter|Semi|Third|Winner|Loser)/i.test(n);
+}
+
+function getScore(id) {
+  return SCORES[id] || null;
+}
+
+function getWinner(id) {
+  var s = SCORES[id];
+  if (!s || s.status !== 'ft') return null;
+  if (s.winner === 1) return s.t1;
+  if (s.winner === 2) return s.t2;
+  return null;
+}
+
+// =============================================================================
+// PEOPLE ASSIGNMENTS
+// =============================================================================
+
+var PEOPLE = {
+  'Mexico':'Katy', 'South Africa':'Rod', 'Canada':'Ted', 'Switzerland':'Renate',
+  'Brazil':'Joy', 'Morocco':'Matty', 'USA':'Sarah', 'Paraguay':'Olive P',
+  'Australia':'Rosa', 'Germany':'Ben', "Cote d'Ivoire":'Olive E', 'Ecuador':'Nic T',
+  'Netherlands':'Sophie', 'Japan':'Francesca', 'Sweden':'Ewen',
+  'Belgium':'Lucy', 'Egypt':'Susan', 'Spain':'Georgette', 'Cabo Verde':'Leah',
+  'Uruguay':'Richie', 'France':'Taki', 'Senegal':'James A', 'Norway':'Tessa',
+  'Argentina':'Louis', 'Algeria':'Tenille', 'Austria':'Elliot',
+  'Portugal':'Mike S', 'DR Congo':'JoyJoy', 'Congo DR':'JoyJoy', 'COD':'JoyJoy',
+  'Colombia':'Sal Edmonds',
+  'England':'Lily', 'Croatia':'Mila', 'Ghana':'Alex L',
+  'Bosnia & Herz.':'Finn', 'Bosnia-Herzegovina':'Finn', 'BIH':'Finn',
+  'Ivory Coast':'Olive E', 'CIV':'Olive E',
+  'Cape Verde':'Leah', 'Cabo Verde':'Leah', 'CPV':'Leah',
+};
+
+function personFor(name) {
+  if (!name) return null;
+  var key = normName(name);
+  return PEOPLE[key] || PEOPLE[name] || null;
+}
+
+// =============================================================================
+// SVG HELPERS
+// =============================================================================
+
+var NS  = 'http://www.w3.org/2000/svg';
+var svg = document.getElementById('bracket-svg');
+
+function svgEl(tag, attrs) {
+  var e = document.createElementNS(NS, tag);
+  var keys = Object.keys(attrs || {});
+  for (var k = 0; k < keys.length; k++) {
+    e.setAttribute(keys[k], attrs[keys[k]]);
+  }
+  return e;
+}
+
+function line(x1, y1, x2, y2, cls) {
+  var l = svgEl('line', { x1: x1, y1: y1, x2: x2, y2: y2 });
+  l.classList.add('b-line');
+  if (cls) l.classList.add(cls);
+  return l;
+}
+
+// Unique clip ID counter so each node gets its own clipPath
+var _clipId = 0;
+
+function makeNode(x, y, r, teamName, scoreId, eliminated) {
+  var g = svgEl('g');
+
+  if (teamName) {
+    var dim  = !!eliminated;
+    var s    = scoreId ? getScore(scoreId) : null;
+    var live = s && s.status === 'live';
+    var url  = flagUrl(teamName);
+
+    // Outer ring (live indicator)
+    var ring = svgEl('circle', {
+      cx: x, cy: y, r: r + 3,
+      fill: 'none',
+      stroke: live ? '#22c55e' : (dim ? '#ddd' : '#bbb'),
+      'stroke-width': live ? 1.8 : 0.8,
+    });
+    ring.classList.add('b-ring');
+    if (dim) ring.classList.add('dim');
+    g.appendChild(ring);
+
+    if (url) {
+      // Unique clipPath for this node
+      var cid = 'cp' + (++_clipId);
+
+      // clipPath must live in the SVG defs — append directly to svg's first defs child
+      var defsEl = svg.querySelector('defs');
+      var cp = svgEl('clipPath', { id: cid });
+      cp.appendChild(svgEl('circle', { cx: x, cy: y, r: r }));
+      defsEl.appendChild(cp);
+
+      // Flag image — sized to fill the circle (flags are ~3:2, so height = 2r, width = 3r centred)
+      var imgW = r * 3;
+      var imgH = r * 2;
+      var img = svgEl('image', {
+        x: x - imgW / 2, y: y - imgH / 2,
+        width: imgW, height: imgH,
+        href: url,
+        'clip-path': 'url(#' + cid + ')',
+        preserveAspectRatio: 'xMidYMid slice',
+        'pointer-events': 'all',
+      });
+      if (dim) img.style.opacity = '0.3';
+      if (scoreId) {
+        (function(eid, tname) {
+          img.addEventListener('mouseenter', function(e) { showTip(e, tname, eid); });
+          img.addEventListener('mousemove', moveTip);
+          img.addEventListener('mouseleave', hideTip);
+        }(scoreId, teamName));
+      }
+      g.appendChild(img);
+
+      // Border circle on top of image
+      var border = svgEl('circle', {
+        cx: x, cy: y, r: r,
+        fill: 'none', stroke: dim ? '#ccc' : '#999', 'stroke-width': 1.5,
+        'pointer-events': 'none',
+      });
+      g.appendChild(border);
+
+    } else {
+      // Fallback: white disc with country code text
+      var disc = svgEl('circle', { cx: x, cy: y, r: r, fill: '#fff', stroke: '#999', 'stroke-width': 1.5 });
+      if (dim) disc.style.opacity = '0.3';
+      if (scoreId) {
+        (function(eid, tname) {
+          disc.addEventListener('mouseenter', function(e) { showTip(e, tname, eid); });
+          disc.addEventListener('mousemove', moveTip);
+          disc.addEventListener('mouseleave', hideTip);
+        }(scoreId, teamName));
+      }
+      g.appendChild(disc);
+      var code = svgEl('text', {
+        x: x, y: y, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': Math.round(r * 0.55), fill: '#555', 'pointer-events': 'none',
+        'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        'font-weight': 600,
+      });
+      code.textContent = shortName(teamName);
+      g.appendChild(code);
+    }
+
+  } else {
+    // Empty / TBD slot
+    var emptyDisc = svgEl('circle', { cx: x, cy: y, r: r, fill: '#ece9e4', stroke: '#999', 'stroke-width': 1.5 });
+    emptyDisc.classList.add('b-empty-disc');
+    g.appendChild(emptyDisc);
+    var qs = svgEl('text', { x: x, y: y, 'font-size': Math.round(r * 0.6) });
+    qs.classList.add('b-empty-qs');
+    qs.textContent = '?';
+    g.appendChild(qs);
+  }
+
+  return g;
+}
+
+function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
+  var push = nodeR + 15;
+  var rad  = (angleDeg - 90) * Math.PI / 180;
+  var lx   = x + Math.cos(rad) * push;
+  var ly   = y + Math.sin(rad) * push;
+
+  if (person) {
+    // Two-line label: country code on first line, person name on second
+    var g = svgEl('g');
+    var t1 = svgEl('text', { x: lx, y: ly - 5 });
+    t1.classList.add('b-label');
+    if (cls) t1.classList.add(cls);
+    t1.textContent = text;
+    g.appendChild(t1);
+    var t2 = svgEl('text', { x: lx, y: ly + 5 });
+    t2.classList.add('b-label');
+    t2.classList.add('b-label-person');
+    t2.textContent = person;
+    g.appendChild(t2);
+    return g;
+  }
+
+  var t = svgEl('text', { x: lx, y: ly });
+  t.classList.add('b-label');
+  if (cls) t.classList.add(cls);
+  t.textContent = text;
+  return t;
+}
+
+// =============================================================================
+// BUILD
+// =============================================================================
+
+function build() {
+  // Clear SVG
+  while (svg.lastChild) svg.removeChild(svg.lastChild);
+
+  // ── Background + glow defs ──
+  var defs = svgEl('defs');
+  var rg = svgEl('radialGradient', { id: 'cg', cx: '50%', cy: '50%', r: '50%' });
+  var stops = [
+    { offset: '0%',   color: '#f7c948', opacity: '0.15' },
+    { offset: '40%',  color: '#f7c948', opacity: '0.04' },
+    { offset: '100%', color: '#f2f1ed', opacity: '0' },
+  ];
+  for (var si = 0; si < stops.length; si++) {
+    rg.appendChild(svgEl('stop', {
+      offset: stops[si].offset,
+      'stop-color': stops[si].color,
+      'stop-opacity': stops[si].opacity,
+    }));
+  }
+  defs.appendChild(rg);
+  svg.appendChild(defs);
+
+  svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 360, fill: '#f2f1ed' }));
+  svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 160, fill: 'url(#cg)' }));
+
+  var guideR = [300, 232, 167, 107, 55];
+  for (var gi = 0; gi < guideR.length; gi++) {
+    svg.appendChild(svgEl('circle', {
+      cx: 0, cy: 0, r: guideR[gi],
+      fill: 'none', stroke: '#e0ddd8',
+      'stroke-width': 0.5, 'stroke-dasharray': '2,6',
+    }));
+  }
+
+
+  var linesG = svgEl('g');
+  var nodesG = svgEl('g');
+
+  // ── Node positions ──
+  //
+  // There are 5 levels of nodes:
+  //   R32:  32 team nodes (2 per match, 16 matches)
+  //   join: 16 "join" nodes — one per R32 match, at the midpoint of its two team slots.
+  //         This is where the two R32 team lines converge. It shows the R32 winner.
+  //   QF:    4 nodes — each at midpoint of 2 join nodes. Shows R16 winner.
+  //   SF:    2 nodes — midpoint of 2 QF nodes. Shows QF winner.
+  //   fin:   2 nodes — one per finalist, on SF angles one ring inward.
+  //
+  // Line structure (all straight):
+  //   R32 team A → join[mi]
+  //   R32 team B → join[mi]
+  //   join[mi*2] → qf[floor(mi/2)]   (pairs of join nodes → one QF node)
+  //   qf[qi*2]   → sf[floor(qi/2)]
+  //   sf[0]      → fin[0]
+  //   sf[1]      → fin[1]
+  //   fin[0]     → centre (0,0)
+  //   fin[1]     → centre (0,0)
+
+  // R32 team positions
+  var r32A = [], r32B = [], r32AngA = [], r32AngB = [];
+  for (var mi = 0; mi < 16; mi++) {
+    var angA = slotAngle(mi * 2);
+    var angB = slotAngle(mi * 2 + 1);
+    r32A.push(polar(angA, RADII.r32));
+    r32B.push(polar(angB, RADII.r32));
+    r32AngA.push(angA);
+    r32AngB.push(angB);
+  }
+
+  // Join nodes: 16 nodes, one per R32 match, at r16 radius
+  // join[mi] is between team A and team B of R32[mi]
+  var joinPos = [], joinAng = [];
+  for (var ji = 0; ji < 16; ji++) {
+    var ja = r16Angle(ji);   // midpoint of slot ji*2 and ji*2+1
+    joinPos.push(polar(ja, RADII.r16));
+    joinAng.push(ja);
+  }
+
+  // QF nodes: 8 nodes, one per R16 match, sitting between its two join nodes
+  // qfPos[i] sits between joinPos[i*2] and joinPos[i*2+1]
+  var qfPos = [], qfAng = [];
+  for (var qi = 0; qi < 8; qi++) {
+    var qa = qfAngle(qi);   // midpoint of join[i*2] and join[i*2+1]
+    qfPos.push(polar(qa, RADII.qf));
+    qfAng.push(qa);
+  }
+
+  // SF nodes: 4 nodes, one per QF match, each between its 2 upstream QF nodes
+  // sfPos[i] sits between qfPos[i*2] and qfPos[i*2+1]
+  var sfPos = [], sfAng = [];
+  for (var sfi = 0; sfi < 4; sfi++) {
+    var sa = sfAngle(sfi);
+    sfPos.push(polar(sa, RADII.sf));
+    sfAng.push(sa);
+  }
+
+  // Final approach nodes: 2 nodes, one per SF match, each between its 2 upstream SF nodes
+  // finPos[i] sits between sfPos[i*2] and sfPos[i*2+1]
+  var finPos = [], finAng = [];
+  for (var fni = 0; fni < 2; fni++) {
+    var fa = finAngle(fni);
+    finPos.push(polar(fa, RADII.fin));
+    finAng.push(fa);
+  }
+
+  var finWin = getWinner(FINAL_ID);
+  var finSc  = getScore(FINAL_ID);
+
+  // ── Draw lines ──
+
+  // R32 team → join node
+  for (var mi2 = 0; mi2 < 16; mi2++) {
+    var sid  = R32[mi2];
+    var sc2  = getScore(sid);
+    var w2   = getWinner(sid);
+    var liv  = sc2 && sc2.status === 'live';
+    var aWon = w2 && sc2 && w2 === sc2.t1;
+    var bWon = w2 && sc2 && w2 === sc2.t2;
+    linesG.appendChild(line(r32A[mi2].x, r32A[mi2].y, joinPos[mi2].x, joinPos[mi2].y,
+      liv ? 'live' : (aWon ? 'won' : '')));
+    linesG.appendChild(line(r32B[mi2].x, r32B[mi2].y, joinPos[mi2].x, joinPos[mi2].y,
+      liv ? 'live' : (bWon ? 'won' : '')));
+  }
+
+  // join → QF node  (join[0]+join[1] → qfPos[0], join[2]+join[3] → qfPos[1], etc.)
+  // Gold only when the R16 match (R16[floor(ji/2)]) has a winner.
+  for (var ji2 = 0; ji2 < 16; ji2++) {
+    var r16idx = Math.floor(ji2 / 2);
+    var jw = getWinner(R16[r16idx]);
+    linesG.appendChild(line(joinPos[ji2].x, joinPos[ji2].y,
+      qfPos[r16idx].x, qfPos[r16idx].y,
+      jw ? 'won' : ''));
+  }
+
+  // QF → SF  (qfPos[i*2] and qfPos[i*2+1] → sfPos[i])
+  // Gold only when the QF match (QF[floor(qi/2)]) has a winner.
+  for (var qi2 = 0; qi2 < 8; qi2++) {
+    var qfMatchIdx = Math.floor(qi2 / 2);
+    var qw = getWinner(QF[qfMatchIdx]);
+    linesG.appendChild(line(qfPos[qi2].x, qfPos[qi2].y,
+      sfPos[qfMatchIdx].x, sfPos[qfMatchIdx].y,
+      qw ? 'won' : ''));
+  }
+
+  // SF → final approach nodes  (sfPos[i*2] and sfPos[i*2+1] → finPos[i])
+  // Gold only when the SF match (SF[floor(si/2)]) has a winner.
+  for (var si2 = 0; si2 < 4; si2++) {
+    var sfMatchIdx = Math.floor(si2 / 2);
+    var sw = getWinner(SF[sfMatchIdx]);
+    linesG.appendChild(line(sfPos[si2].x, sfPos[si2].y,
+      finPos[sfMatchIdx].x, finPos[sfMatchIdx].y,
+      sw ? 'won' : ''));
+  }
+
+  // Final approach nodes → centre
+  linesG.appendChild(line(finPos[0].x, finPos[0].y, 0, 0, finWin ? 'won' : ''));
+  linesG.appendChild(line(finPos[1].x, finPos[1].y, 0, 0, finWin ? 'won' : ''));
+
+  // ── Draw R32 nodes ──
+  for (var mi3 = 0; mi3 < 16; mi3++) {
+    var sid3 = R32[mi3];
+    var sc3  = getScore(sid3);
+    var t1   = sc3 && !isPlaceholder(sc3.t1) ? sc3.t1 : null;
+    var t2   = sc3 && !isPlaceholder(sc3.t2) ? sc3.t2 : null;
+    var w3   = getWinner(sid3);
+    nodesG.appendChild(makeNode(r32A[mi3].x, r32A[mi3].y, NR.r32, t1, sid3, w3 && t1 && w3 !== t1));
+    nodesG.appendChild(makeNode(r32B[mi3].x, r32B[mi3].y, NR.r32, t2, sid3, w3 && t2 && w3 !== t2));
+    nodesG.appendChild(makeLabel(r32A[mi3].x, r32A[mi3].y, r32AngA[mi3],
+      shortName(t1), NR.r32, w3 === t1 ? 'won' : (t1 ? 'active' : ''), personFor(t1)));
+    nodesG.appendChild(makeLabel(r32B[mi3].x, r32B[mi3].y, r32AngB[mi3],
+      shortName(t2), NR.r32, w3 === t2 ? 'won' : (t2 ? 'active' : ''), personFor(t2)));
+  }
+
+  // ── Draw join nodes (show R32 winner advancing toward QF) ──
+  for (var ji3 = 0; ji3 < 16; ji3++) {
+    var jwin    = getWinner(R32[ji3]);
+    var jsc     = getScore(R32[ji3]);
+    var jt1     = jsc && !isPlaceholder(jsc.t1) ? jsc.t1 : null;
+    var jt2     = jsc && !isPlaceholder(jsc.t2) ? jsc.t2 : null;
+    // Show winner if known; otherwise show first known team as placeholder
+    var jdisplay = jwin || null;
+    nodesG.appendChild(makeNode(joinPos[ji3].x, joinPos[ji3].y, NR.r16,
+      jdisplay, R32[ji3], false));
+    if (jdisplay) {
+      nodesG.appendChild(makeLabel(joinPos[ji3].x, joinPos[ji3].y, joinAng[ji3],
+        shortName(jdisplay), NR.r16, 'won'));
+    }
+  }
+
+  // ── Draw QF nodes (8 nodes, one per R16 match) ──
+  // qfPos[i] shows the winner of R16[i]
+  for (var qi3 = 0; qi3 < 8; qi3++) {
+    var r16id_q  = R16[qi3];
+    var r16w_q   = getWinner(r16id_q);
+    var qdisplay = r16w_q || null;
+    nodesG.appendChild(makeNode(qfPos[qi3].x, qfPos[qi3].y, NR.qf, qdisplay, r16id_q, false));
+    if (qdisplay) {
+      nodesG.appendChild(makeLabel(qfPos[qi3].x, qfPos[qi3].y, qfAng[qi3],
+        shortName(qdisplay), NR.qf, 'won'));
+    }
+  }
+
+  // ── Draw SF nodes (4 nodes, one per QF match) ──
+  // sfPos[i] shows the winner of QF[i]
+  for (var sfi2 = 0; sfi2 < 4; sfi2++) {
+    var qfid_s   = QF[sfi2];
+    var qfw_s    = getWinner(qfid_s);
+    var sdisplay = qfw_s || null;
+    nodesG.appendChild(makeNode(sfPos[sfi2].x, sfPos[sfi2].y, NR.sf, sdisplay, qfid_s, false));
+    if (sdisplay) {
+      nodesG.appendChild(makeLabel(sfPos[sfi2].x, sfPos[sfi2].y, sfAng[sfi2],
+        shortName(sdisplay), NR.sf, 'won'));
+    }
+  }
+
+  // ── Draw final approach nodes (2 nodes, one per SF match) ──
+  // finPos[i] shows the winner of SF[i]
+  for (var fni2 = 0; fni2 < 2; fni2++) {
+    var sfid_f   = SF[fni2];
+    var sfw_f    = getWinner(sfid_f);
+    var fdisplay = (finSc && !isPlaceholder(fni2 === 0 ? finSc.t1 : finSc.t2)
+      ? (fni2 === 0 ? finSc.t1 : finSc.t2) : null) || sfw_f;
+    var felim    = finWin && fdisplay && finWin !== fdisplay;
+    nodesG.appendChild(makeNode(finPos[fni2].x, finPos[fni2].y, NR.fin, fdisplay, FINAL_ID, felim));
+    if (fdisplay) {
+      nodesG.appendChild(makeLabel(finPos[fni2].x, finPos[fni2].y, finAng[fni2],
+        shortName(fdisplay), NR.fin, finWin === fdisplay ? 'won' : 'active'));
+    }
+  }
+
+  svg.appendChild(linesG);
+  svg.appendChild(nodesG);
+
+  // ── Centre trophy ──
+  var champ = finWin;
+  var cg    = svgEl('g');
+  cg.appendChild(svgEl('circle', {
+    cx: 0, cy: 0, r: 34, fill: '#fff',
+    stroke: champ ? '#f7c948' : '#e0ddd8',
+    'stroke-width': champ ? 2 : 1,
+  }));
+  var tro = svgEl('text', {
+    x: 0, y: 0,
+    'text-anchor': 'middle', 'dominant-baseline': 'central',
+    'font-size': 22, 'pointer-events': 'none',
+  });
+  tro.textContent = '🏆'; // trophy emoji
+  cg.appendChild(tro);
+  if (champ) {
+    var champMeta = teamMeta(champ);
+    var cf = svgEl('text', {
+      x: 0, y: -52,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': 20, 'pointer-events': 'none',
+    });
+    cf.textContent = champMeta[0];
+    cg.appendChild(cf);
+    var cn = svgEl('text', {
+      x: 0, y: 52,
+      'text-anchor': 'middle',
+      'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      'font-size': 11, 'font-weight': 700, 'letter-spacing': 1,
+      fill: '#b89010', 'pointer-events': 'none',
+    });
+    cn.textContent = champ.toUpperCase();
+    cg.appendChild(cn);
+  }
+  svg.appendChild(cg);
+}
+
+// =============================================================================
+// TOOLTIP
+// =============================================================================
+
+var tip = document.getElementById('b-tip');
+
+function showTip(e, teamName, espnId) {
+  var s = SCORES[espnId];
+  var text = teamName;
+  if (s && (s.status === 'live' || s.status === 'ft') && s.t1 && s.t2) {
+    var other  = s.t1 === teamName ? s.t2 : s.t1;
+    var myS    = s.t1 === teamName ? s.s1 : s.s2;
+    var theirS = s.t1 === teamName ? s.s2 : s.s1;
+    var lbl    = s.status === 'live' ? (s.clock || 'Live') : 'FT';
+    text = teamName + '  ' + myS + '–' + theirS + '  ' + other + '  (' + lbl + ')';
+    if (s.pen) text += '  — ' + s.pen;
+  } else if (s && s.t1 && s.t2 && !isPlaceholder(s.t2)) {
+    var other2 = s.t1 === teamName ? s.t2 : s.t1;
+    text = teamName + ' vs ' + other2;
+  }
+  tip.textContent = text;
+  tip.style.opacity = '1';
+  moveTip(e);
+}
+function moveTip(e) {
+  tip.style.left = (e.clientX + 14) + 'px';
+  tip.style.top  = (e.clientY - 30) + 'px';
+}
+function hideTip() {
+  tip.style.opacity = '0';
+}
+
+// =============================================================================
+// ESPN FETCH
+// =============================================================================
+
+var liveTimer = null;
+
+function fetchScores() {
+  var url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=100';
+  fetch(url).then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(data) {
+    var hasLive = false;
+    var events = data.events || [];
+
+    for (var ei = 0; ei < events.length; ei++) {
+      var ev   = events[ei];
+      var comp = ev.competitions && ev.competitions[0];
+      if (!comp) continue;
+      var teams = comp.competitors || [];
+      if (teams.length < 2) continue;
+
+      var home = null, away = null;
+      for (var ti = 0; ti < teams.length; ti++) {
+        if (teams[ti].homeAway === 'home') home = teams[ti];
+        else away = teams[ti];
+      }
+      if (!home) home = teams[0];
+      if (!away) away = teams[1];
+
+      var t1raw = (home.team && home.team.displayName) || '';
+      var t2raw = (away.team && away.team.displayName) || '';
+      var t1 = isPlaceholder(t1raw) ? null : t1raw;
+      var t2 = isPlaceholder(t2raw) ? null : t2raw;
+
+      var sType  = (ev.status && ev.status.type && ev.status.type.name) || '';
+      var rawClk = (ev.status && ev.status.displayClock) || '';
+      var period = (ev.status && ev.status.period) || 0;
+
+      var status = 'pre';
+      if (sType === 'STATUS_FINAL' || sType === 'STATUS_FULL_TIME' || sType === 'STATUS_FINAL_PEN') {
+        status = 'ft';
+      } else if (sType === 'STATUS_IN_PROGRESS' || sType === 'STATUS_HALFTIME') {
+        status = 'live';
+      }
+      if (status === 'live') hasLive = true;
+
+      var clockDisp = '';
+      if (status === 'live') {
+        if (sType === 'STATUS_HALFTIME') {
+          clockDisp = 'HT';
+        } else {
+          var mins = parseInt(rawClk.split(':')[0], 10) || 0;
+          var cap  = period === 1 ? 45 : 90;
+          clockDisp = mins > cap ? cap + '+' + (mins - cap) + "'" : mins + "'";
+        }
+      }
+      if (sType === 'STATUS_FINAL_PEN') clockDisp = 'Pens';
+
+      var s1 = parseInt(home.score != null ? home.score : '0', 10);
+      var s2 = parseInt(away.score != null ? away.score : '0', 10);
+
+      var w = null;
+      if (status === 'ft') {
+        if (home.winner === true)  w = 1;
+        else if (away.winner === true) w = 2;
+        else if (s1 > s2) w = 1;
+        else if (s2 > s1) w = 2;
+      }
+
+      var pen = null;
+      var notes = comp.notes || [];
+      if (notes.length) pen = notes[0].headline || notes[0].text || null;
+
+      SCORES[ev.id] = { t1: t1, t2: t2, s1: s1, s2: s2, status: status, clock: clockDisp, winner: w, pen: pen };
+    }
+
+    build();
+    document.getElementById('bracketStatus').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    clearTimeout(liveTimer);
+    if (hasLive) liveTimer = setTimeout(fetchScores, 60000);
+
+  }).catch(function() {
+    document.getElementById('bracketStatus').textContent = 'Could not load scores';
+  });
+}
+
+// =============================================================================
+// INIT
+// =============================================================================
+build();
+fetchScores();
+</script>
+</body>
+</html>
