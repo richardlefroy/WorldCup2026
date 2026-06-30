@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIFA World Cup 2026 — Group Stage</title>
+<title>FIFA World Cup 2026 — Knockout Stage</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,8 +13,8 @@
     <h1>⚽ World Cup '26</h1>
   </div>
   <div class="header-right">
-    <a href="index.html" class="nav-link active">Group Stage</a>
-    <a href="knockout.html" class="nav-link">Knockout</a>
+    <a href="groupstage.html" class="nav-link">Group Stage</a>
+    <a href="index.html" class="nav-link active">Knockout</a>
     <a href="groups.html" class="nav-link">Groups</a>
   </div>
 </header>
@@ -40,28 +40,15 @@
 <div class="content">
 
   <div class="filter-section">
-    <div class="filter-toggle-row">
-      <button class="person-filter-toggle" id="groupFilterToggle" onclick="toggleGroupFilter()">
-        Filter by group <span class="toggle-arrow">▼</span>
-      </button>
-      <div class="person-active-chips" id="groupActiveChips"></div>
-    </div>
-    <div class="person-filter-panel" id="groupFilterPanel">
-      <div class="pill-filter group-filter" id="groupFilter">
-        <button class="active" data-group="all" onclick="filterGroup(this)">All</button>
-        <button data-group="A" onclick="filterGroup(this)">A</button>
-        <button data-group="B" onclick="filterGroup(this)">B</button>
-        <button data-group="C" onclick="filterGroup(this)">C</button>
-        <button data-group="D" onclick="filterGroup(this)">D</button>
-        <button data-group="E" onclick="filterGroup(this)">E</button>
-        <button data-group="F" onclick="filterGroup(this)">F</button>
-        <button data-group="G" onclick="filterGroup(this)">G</button>
-        <button data-group="H" onclick="filterGroup(this)">H</button>
-        <button data-group="I" onclick="filterGroup(this)">I</button>
-        <button data-group="J" onclick="filterGroup(this)">J</button>
-        <button data-group="K" onclick="filterGroup(this)">K</button>
-        <button data-group="L" onclick="filterGroup(this)">L</button>
-      </div>
+    <div class="filter-label">Filter by stage</div>
+    <div class="pill-filter stage-filter" id="stageFilter">
+      <button class="active" data-stage="all" onclick="filterStage(this)">All</button>
+      <button data-stage="R32" onclick="filterStage(this)">Round of 32</button>
+      <button data-stage="R16" onclick="filterStage(this)">Round of 16</button>
+      <button data-stage="QF"  onclick="filterStage(this)">Quarter-finals</button>
+      <button data-stage="SF"  onclick="filterStage(this)">Semi-finals</button>
+      <button data-stage="TP"  onclick="filterStage(this)">Third place</button>
+      <button data-stage="F"   onclick="filterStage(this)">Final</button>
     </div>
   </div>
 
@@ -130,64 +117,76 @@
   <div id="schedule"></div>
   <div class="no-matches" id="noMatches">No matches found for the current filters.</div>
 
-  <!--
-  <div style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd;">
-    <div style="font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;">Examples</div>
-    <div class="matches-grid">
-
-      <div class="match-card">
-        <div class="match-card-status"><span class="match-status-pill live">Live · 42'</span></div>
-        <span class="match-group-badge badge-d">GRP D</span>
-        <div class="match-teams">
-          <div class="team-row-m">
-            <span class="team-flag">🇦🇺</span>
-            <span class="team-name">Australia</span>
-            <span class="team-person highlighted">Rosa</span>
-            <span class="score-num">3</span>
-          </div>
-          <div class="vs-divider">vs</div>
-          <div class="team-row-m">
-            <span class="team-flag">🇺🇸</span>
-            <span class="team-name">USA</span>
-            <span class="team-person highlighted">Sarah</span>
-            <span class="score-num">1</span>
-          </div>
-        </div>
-        <div class="match-meta">
-          <div class="match-venue">Vancouver</div>
-        </div>
-      </div>
-
-      <div class="match-card">
-        <div class="match-card-status"><span class="match-status-pill ft">Match Finished</span></div>
-        <span class="match-group-badge badge-k">GRP K</span>
-        <div class="match-teams">
-          <div class="team-row-m">
-            <span class="team-flag">🇨🇴</span>
-            <span class="team-name">Colombia</span>
-            <span class="team-person highlighted">Sal E</span>
-            <span class="score-num">7</span>
-          </div>
-          <div class="vs-divider">vs</div>
-          <div class="team-row-m">
-            <span class="team-flag">🇵🇹</span>
-            <span class="team-name">Portugal</span>
-            <span class="team-person highlighted">Mike S</span>
-            <span class="score-num">2</span>
-          </div>
-        </div>
-        <div class="match-meta">
-          <div class="match-venue">Seattle</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-  -->
 
 </div>
 
+</div>
+
+<div class="elim-overlay" id="elimOverlay" onclick="hideElimToast()"></div>
+<div class="elim-toast" id="elimToast">
+  <button class="elim-toast-close" onclick="hideElimToast()" aria-label="Dismiss">✕</button>
+  <strong id="elimToastTop"></strong>
+  <span id="elimToastBody"></span>
+</div>
+
 <script>
+// ET = UTC-4 in summer
+function etMs(y, mo, d, h, m) {
+  return Date.UTC(y, mo - 1, d, h + 4, m || 0);
+}
+
+const STAGE_LABELS = {
+  R32: "Round of 32",
+  R16: "Round of 16",
+  QF:  "Quarter-final",
+  SF:  "Semi-final",
+  TP:  "Third place",
+  F:   "Final",
+};
+
+// MATCHES is keyed by ESPN event ID so we can match scores and resolved team names.
+// t1/t2 are fallback labels used only until ESPN resolves the actual team names.
+const MATCHES = [
+  // ── Round of 32 ──────────────────────────────────────────────
+  { ms: etMs(2026,6,28,15,0),  stage:"R32", espnId:"760486", t1:"South Africa",  t2:"Canada",          venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,6,29,13,0),  stage:"R32", espnId:"760487", t1:"Brazil",        t2:"Japan",           venue:"NRG Stadium, Houston" },
+  { ms: etMs(2026,6,29,16,30), stage:"R32", espnId:"760489", t1:"Germany",       t2:"Paraguay",        venue:"Gillette Stadium, Boston" },
+  { ms: etMs(2026,6,29,21,0),  stage:"R32", espnId:"760488", t1:"Netherlands",   t2:"Morocco",         venue:"Estadio BBVA, Monterrey" },
+  { ms: etMs(2026,6,30,13,0),  stage:"R32", espnId:"760490", t1:"Cote d'Ivoire", t2:"Norway",          venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,6,30,17,0),  stage:"R32", espnId:"760492", t1:"France",        t2:"Sweden",          venue:"MetLife Stadium, New York/NJ" },
+  { ms: etMs(2026,6,30,21,0),  stage:"R32", espnId:"760491", t1:"Mexico",        t2:"Ecuador",         venue:"Estadio Azteca, Mexico City" },
+  { ms: etMs(2026,7, 1,12,0),  stage:"R32", espnId:"760495", t1:"England",       t2:"DR Congo",        venue:"Mercedes-Benz Stadium, Atlanta" },
+  { ms: etMs(2026,7, 1,16,0),  stage:"R32", espnId:"760493", t1:"Belgium",       t2:"Senegal",         venue:"Lumen Field, Seattle" },
+  { ms: etMs(2026,7, 1,20,0),  stage:"R32", espnId:"760494", t1:"USA",           t2:"Bosnia & Herz.",  venue:"Levi's Stadium, San Francisco" },
+  { ms: etMs(2026,7, 2,15,0),  stage:"R32", espnId:"760497", t1:"Spain",         t2:"Austria",         venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,7, 2,19,0),  stage:"R32", espnId:"760496", t1:"Portugal",      t2:"Croatia",         venue:"BMO Field, Toronto" },
+  { ms: etMs(2026,7, 2,23,0),  stage:"R32", espnId:"760498", t1:"Switzerland",   t2:"Algeria",         venue:"BC Place, Vancouver" },
+  { ms: etMs(2026,7, 3,14,0),  stage:"R32", espnId:"760499", t1:"Australia",     t2:"Egypt",           venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7, 3,18,0),  stage:"R32", espnId:"760500", t1:"Argentina",     t2:"Cabo Verde",      venue:"Hard Rock Stadium, Miami" },
+  { ms: etMs(2026,7, 3,21,30), stage:"R32", espnId:"760501", t1:"Colombia",      t2:"Ghana",           venue:"Arrowhead Stadium, Kansas City" },
+  // ── Round of 16 ──────────────────────────────────────────────
+  { ms: etMs(2026,7, 4,13,0),  stage:"R16", espnId:"760502", t1:"TBD", t2:"TBD", venue:"NRG Stadium, Houston" },
+  { ms: etMs(2026,7, 4,17,0),  stage:"R16", espnId:"760503", t1:"TBD", t2:"TBD", venue:"Lincoln Financial Field, Philadelphia" },
+  { ms: etMs(2026,7, 5,16,0),  stage:"R16", espnId:"760504", t1:"TBD", t2:"TBD", venue:"MetLife Stadium, New York/NJ" },
+  { ms: etMs(2026,7, 5,20,0),  stage:"R16", espnId:"760505", t1:"TBD", t2:"TBD", venue:"Estadio Azteca, Mexico City" },
+  { ms: etMs(2026,7, 6,15,0),  stage:"R16", espnId:"760506", t1:"TBD", t2:"TBD", venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7, 6,20,0),  stage:"R16", espnId:"760507", t1:"TBD", t2:"TBD", venue:"Lumen Field, Seattle" },
+  { ms: etMs(2026,7, 7,12,0),  stage:"R16", espnId:"760509", t1:"TBD", t2:"TBD", venue:"Mercedes-Benz Stadium, Atlanta" },
+  { ms: etMs(2026,7, 7,16,0),  stage:"R16", espnId:"760508", t1:"TBD", t2:"TBD", venue:"BC Place, Vancouver" },
+  // ── Quarter-finals ───────────────────────────────────────────
+  { ms: etMs(2026,7, 9,16,0),  stage:"QF",  espnId:"760510", t1:"TBD", t2:"TBD", venue:"Gillette Stadium, Boston" },
+  { ms: etMs(2026,7,10,15,0),  stage:"QF",  espnId:"760511", t1:"TBD", t2:"TBD", venue:"SoFi Stadium, LA" },
+  { ms: etMs(2026,7,11,17,0),  stage:"QF",  espnId:"760512", t1:"TBD", t2:"TBD", venue:"Hard Rock Stadium, Miami" },
+  { ms: etMs(2026,7,11,21,0),  stage:"QF",  espnId:"760513", t1:"TBD", t2:"TBD", venue:"Arrowhead Stadium, Kansas City" },
+  // ── Semi-finals ──────────────────────────────────────────────
+  { ms: etMs(2026,7,14,15,0),  stage:"SF",  espnId:"760514", t1:"TBD", t2:"TBD", venue:"AT&T Stadium, Dallas" },
+  { ms: etMs(2026,7,15,15,0),  stage:"SF",  espnId:"760515", t1:"TBD", t2:"TBD", venue:"Mercedes-Benz Stadium, Atlanta" },
+  // ── Third place ──────────────────────────────────────────────
+  { ms: etMs(2026,7,18,17,0),  stage:"TP",  espnId:"760516", t1:"TBD", t2:"TBD", venue:"Hard Rock Stadium, Miami" },
+  // ── Final ────────────────────────────────────────────────────
+  { ms: etMs(2026,7,19,15,0),  stage:"F",   espnId:"760517", t1:"TBD", t2:"TBD", venue:"MetLife Stadium, New York/NJ" },
+];
+
 const PEOPLE = {
   "Mexico":"Katy","South Africa":"Rod","South Korea":"Emma","Czechia":"Khrob",
   "Canada":"Ted","Bosnia & Herz.":"Finn","Qatar":"Jono","Switzerland":"Renate",
@@ -218,256 +217,155 @@ const FLAGS = {
   "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦"
 };
 
-// Venue -> IANA tz for "match local time" mode
 const VENUE_TZ = {
-  "Mexico City":   "America/Mexico_City",
-  "Guadalajara":   "America/Mexico_City",
-  "Monterrey":     "America/Monterrey",
-  "Toronto":       "America/Toronto",
-  "Vancouver":     "America/Vancouver",
-  "New York/NJ":   "America/New_York",
-  "Boston":        "America/New_York",
-  "Philadelphia":  "America/New_York",
-  "Atlanta":       "America/New_York",
-  "Miami":         "America/New_York",
-  "Kansas City":   "America/Chicago",
-  "Houston":       "America/Chicago",
-  "Dallas":        "America/Chicago",
-  "Seattle":       "America/Los_Angeles",
-  "Los Angeles":   "America/Los_Angeles",
-  "San Francisco": "America/Los_Angeles",
+  "SoFi Stadium, LA":                        "America/Los_Angeles",
+  "NRG Stadium, Houston":                    "America/Chicago",
+  "Gillette Stadium, Boston":                "America/New_York",
+  "Estadio BBVA, Monterrey":                 "America/Monterrey",
+  "AT&T Stadium, Dallas":                    "America/Chicago",
+  "MetLife Stadium, New York/NJ":            "America/New_York",
+  "Estadio Azteca, Mexico City":             "America/Mexico_City",
+  "Mercedes-Benz Stadium, Atlanta":          "America/New_York",
+  "Lumen Field, Seattle":                    "America/Los_Angeles",
+  "Levi's Stadium, San Francisco":           "America/Los_Angeles",
+  "BMO Field, Toronto":                      "America/Toronto",
+  "BC Place, Vancouver":                     "America/Vancouver",
+  "Hard Rock Stadium, Miami":                "America/New_York",
+  "Arrowhead Stadium, Kansas City":          "America/Chicago",
+  "Lincoln Financial Field, Philadelphia":   "America/New_York",
 };
 
-// Store UTC times as ms since epoch
-function etMs(dateStr, h, m) {
-  const utcH = h + 4; // ET = UTC-4 in June
-  return Date.UTC(2026, parseInt(dateStr.split('-')[1])-1, parseInt(dateStr.split('-')[2]), utcH, m||0);
+// ESPN name → our name (for PEOPLE/FLAGS lookup after ESPN resolves team names)
+const ESPN_TO_OURS = {
+  "Ivory Coast":          "Cote d'Ivoire",
+  "Bosnia-Herzegovina":   "Bosnia & Herz.",
+  "Cape Verde":           "Cabo Verde",
+  "Congo DR":             "DR Congo",
+  "Türkiye":              "Turkey",
+  "United States":        "USA",
+  "South Korea":          "South Korea",
+  "Czech Republic":       "Czechia",
+};
+function ourName(espnDisplayName) { return ESPN_TO_OURS[espnDisplayName] || espnDisplayName; }
+
+// Placeholder team name patterns ESPN uses before a slot is confirmed
+function isPlaceholder(name) {
+  return !name || name === 'TBD' ||
+    /^(Group|Round of|Quarterfinal|Semifinal|Third Place)/i.test(name);
 }
 
-const MATCHES = [
-  // June 11
-  { ms:etMs("2026-06-11",15,0),  group:"A", t1:"Mexico",        t2:"South Africa",  venue:"Mexico City" },
-  { ms:etMs("2026-06-11",22,0),  group:"A", t1:"South Korea",   t2:"Czechia",       venue:"Guadalajara" },
-  // June 12
-  { ms:etMs("2026-06-12",15,0),  group:"B", t1:"Canada",        t2:"Bosnia & Herz.", venue:"Toronto" },
-  { ms:etMs("2026-06-12",21,0),  group:"D", t1:"USA",           t2:"Paraguay",      venue:"Los Angeles" },
-  // June 13
-  { ms:etMs("2026-06-13",15,0),  group:"B", t1:"Qatar",         t2:"Switzerland",   venue:"San Francisco" },
-  { ms:etMs("2026-06-13",18,0),  group:"C", t1:"Brazil",        t2:"Morocco",       venue:"New York/NJ" },
-  { ms:etMs("2026-06-13",21,0),  group:"C", t1:"Haiti",         t2:"Scotland",      venue:"Boston" },
-  { ms:etMs("2026-06-14", 0,0),  group:"D", t1:"Australia",     t2:"Turkey",        venue:"Vancouver" },
-  // June 14
-  { ms:etMs("2026-06-14",13,0),  group:"E", t1:"Germany",       t2:"Curaçao",       venue:"Houston" },
-  { ms:etMs("2026-06-14",16,0),  group:"F", t1:"Netherlands",   t2:"Japan",         venue:"Dallas" },
-  { ms:etMs("2026-06-14",19,0),  group:"E", t1:"Cote d'Ivoire", t2:"Ecuador",       venue:"Philadelphia" },
-  { ms:etMs("2026-06-14",22,0),  group:"F", t1:"Tunisia",       t2:"Sweden",        venue:"Monterrey" },
-  // June 15
-  { ms:etMs("2026-06-15",12,0),  group:"H", t1:"Spain",         t2:"Cabo Verde",    venue:"Atlanta" },
-  { ms:etMs("2026-06-15",15,0),  group:"G", t1:"Belgium",       t2:"Egypt",         venue:"Seattle" },
-  { ms:etMs("2026-06-15",18,0),  group:"H", t1:"Saudi Arabia",  t2:"Uruguay",       venue:"Miami" },
-  { ms:etMs("2026-06-15",21,0),  group:"G", t1:"Iran",          t2:"New Zealand",   venue:"Los Angeles" },
-  // June 16
-  { ms:etMs("2026-06-16",15,0),  group:"I", t1:"France",        t2:"Senegal",       venue:"New York/NJ" },
-  { ms:etMs("2026-06-16",18,0),  group:"I", t1:"Iraq",          t2:"Norway",        venue:"Boston" },
-  { ms:etMs("2026-06-16",21,0),  group:"J", t1:"Argentina",     t2:"Algeria",       venue:"Kansas City" },
-  { ms:etMs("2026-06-17", 0,0),  group:"J", t1:"Austria",       t2:"Jordan",        venue:"San Francisco" },
-  // June 17
-  { ms:etMs("2026-06-17",13,0),  group:"K", t1:"Portugal",      t2:"DR Congo",      venue:"Houston" },
-  { ms:etMs("2026-06-17",16,0),  group:"L", t1:"England",       t2:"Croatia",       venue:"Dallas" },
-  { ms:etMs("2026-06-17",19,0),  group:"L", t1:"Ghana",         t2:"Panama",        venue:"Toronto" },
-  { ms:etMs("2026-06-17",22,0),  group:"K", t1:"Uzbekistan",    t2:"Colombia",      venue:"Mexico City" },
-  // June 18
-  { ms:etMs("2026-06-18",12,0),  group:"A", t1:"Czechia",       t2:"South Africa",  venue:"Atlanta" },
-  { ms:etMs("2026-06-18",15,0),  group:"B", t1:"Switzerland",   t2:"Bosnia & Herz.", venue:"Los Angeles" },
-  { ms:etMs("2026-06-18",18,0),  group:"B", t1:"Canada",        t2:"Qatar",         venue:"Vancouver" },
-  { ms:etMs("2026-06-18",21,0),  group:"A", t1:"Mexico",        t2:"South Korea",   venue:"Guadalajara" },
-  // June 19
-  { ms:etMs("2026-06-19",15,0),  group:"D", t1:"USA",           t2:"Australia",     venue:"Seattle" },
-  { ms:etMs("2026-06-19",15,0),  group:"C", t1:"Scotland",      t2:"Morocco",       venue:"Boston" },
-  { ms:etMs("2026-06-19",21,0),  group:"C", t1:"Brazil",        t2:"Haiti",         venue:"Philadelphia" },
-  { ms:etMs("2026-06-20", 0,0),  group:"D", t1:"Turkey",        t2:"Paraguay",      venue:"San Francisco" },
-  // June 20
-  { ms:etMs("2026-06-20",13,0),  group:"F", t1:"Netherlands",   t2:"Sweden",        venue:"Houston" },
-  { ms:etMs("2026-06-20",16,0),  group:"E", t1:"Germany",       t2:"Cote d'Ivoire", venue:"Toronto" },
-  { ms:etMs("2026-06-20",20,0),  group:"E", t1:"Ecuador",       t2:"Curaçao",       venue:"Kansas City" },
-  { ms:etMs("2026-06-21", 0,0),  group:"F", t1:"Tunisia",       t2:"Japan",         venue:"Monterrey" },
-  // June 21
-  { ms:etMs("2026-06-21",12,0),  group:"H", t1:"Spain",         t2:"Saudi Arabia",  venue:"Atlanta" },
-  { ms:etMs("2026-06-21",15,0),  group:"G", t1:"Belgium",       t2:"Iran",          venue:"Los Angeles" },
-  { ms:etMs("2026-06-21",18,0),  group:"H", t1:"Uruguay",       t2:"Cabo Verde",    venue:"Miami" },
-  { ms:etMs("2026-06-21",21,0),  group:"G", t1:"New Zealand",   t2:"Egypt",         venue:"Vancouver" },
-  // June 22
-  { ms:etMs("2026-06-22",13,0),  group:"J", t1:"Argentina",     t2:"Austria",       venue:"Dallas" },
-  { ms:etMs("2026-06-22",17,0),  group:"I", t1:"France",        t2:"Iraq",          venue:"Philadelphia" },
-  { ms:etMs("2026-06-22",20,0),  group:"I", t1:"Norway",        t2:"Senegal",       venue:"New York/NJ" },
-  { ms:etMs("2026-06-22",23,0),  group:"J", t1:"Jordan",        t2:"Algeria",       venue:"San Francisco" },
-  // June 23
-  { ms:etMs("2026-06-23",13,0),  group:"K", t1:"Portugal",      t2:"Uzbekistan",    venue:"Houston" },
-  { ms:etMs("2026-06-23",16,0),  group:"L", t1:"England",       t2:"Ghana",         venue:"Boston" },
-  { ms:etMs("2026-06-23",19,0),  group:"L", t1:"Panama",        t2:"Croatia",       venue:"Toronto" },
-  { ms:etMs("2026-06-23",22,0),  group:"K", t1:"Colombia",      t2:"DR Congo",      venue:"Guadalajara" },
-  // June 24
-  { ms:etMs("2026-06-24",15,0),  group:"B", t1:"Switzerland",   t2:"Canada",        venue:"Vancouver" },
-  { ms:etMs("2026-06-24",15,0),  group:"B", t1:"Bosnia & Herz.",t2:"Qatar",         venue:"Seattle" },
-  { ms:etMs("2026-06-24",18,0),  group:"C", t1:"Brazil",        t2:"Scotland",      venue:"Miami" },
-  { ms:etMs("2026-06-24",18,0),  group:"C", t1:"Morocco",       t2:"Haiti",         venue:"Atlanta" },
-  { ms:etMs("2026-06-24",21,0),  group:"A", t1:"Mexico",        t2:"Czechia",       venue:"Mexico City" },
-  { ms:etMs("2026-06-24",21,0),  group:"A", t1:"South Korea",   t2:"South Africa",  venue:"Monterrey" },
-  // June 25
-  { ms:etMs("2026-06-25",16,0),  group:"E", t1:"Ecuador",       t2:"Germany",       venue:"New York/NJ" },
-  { ms:etMs("2026-06-25",16,0),  group:"E", t1:"Curaçao",       t2:"Cote d'Ivoire", venue:"Philadelphia" },
-  { ms:etMs("2026-06-25",19,0),  group:"F", t1:"Tunisia",       t2:"Netherlands",   venue:"Kansas City" },
-  { ms:etMs("2026-06-25",19,0),  group:"F", t1:"Japan",         t2:"Sweden",        venue:"Dallas" },
-  { ms:etMs("2026-06-25",22,0),  group:"D", t1:"USA",           t2:"Turkey",        venue:"Los Angeles" },
-  { ms:etMs("2026-06-25",22,0),  group:"D", t1:"Paraguay",      t2:"Australia",     venue:"San Francisco" },
-  // June 26
-  { ms:etMs("2026-06-26",15,0),  group:"I", t1:"Norway",        t2:"France",        venue:"Boston" },
-  { ms:etMs("2026-06-26",15,0),  group:"I", t1:"Senegal",       t2:"Iraq",          venue:"Toronto" },
-  { ms:etMs("2026-06-26",20,0),  group:"H", t1:"Uruguay",       t2:"Spain",         venue:"Guadalajara" },
-  { ms:etMs("2026-06-26",20,0),  group:"H", t1:"Cabo Verde",    t2:"Saudi Arabia",  venue:"Houston" },
-  { ms:etMs("2026-06-26",23,0),  group:"G", t1:"New Zealand",   t2:"Belgium",       venue:"Vancouver" },
-  { ms:etMs("2026-06-26",23,0),  group:"G", t1:"Egypt",         t2:"Iran",          venue:"Seattle" },
-  // June 27
-  { ms:etMs("2026-06-27",17,0),  group:"L", t1:"Panama",        t2:"England",       venue:"New York/NJ" },
-  { ms:etMs("2026-06-27",17,0),  group:"L", t1:"Croatia",       t2:"Ghana",         venue:"Philadelphia" },
-  { ms:etMs("2026-06-27",19,30), group:"K", t1:"DR Congo",      t2:"Uzbekistan",    venue:"Atlanta" },
-  { ms:etMs("2026-06-27",22,0),  group:"J", t1:"Jordan",        t2:"Argentina",     venue:"Dallas" },
-  { ms:etMs("2026-06-27",22,0),  group:"J", t1:"Algeria",       t2:"Austria",       venue:"Kansas City" },
-  { ms:etMs("2026-06-27",22,0),  group:"K", t1:"Colombia",      t2:"Portugal",      venue:"Seattle" },
-];
+let SCORES             = {};  // espnId → { s1, s2, status, clock, extra }
+let ELIM_SET           = new Set(); // group-stage eliminated teams (from standings API)
+// Teams marked "Best 8 advance" by ESPN but did not actually qualify for R32
+const BEST8_MISSED     = new Set(["South Korea", "Scotland", "Iran", "Uruguay"]);
+let KNOCKOUT_ELIM_SET  = new Set(); // knockout-eliminated teams (derived from finished match scores)
+let liveRefreshTimer   = null;
 
-let currentGroup = "all";
-let selectedPeople = new Set();
-let SCORES = {}; // keyed by "T1|T2" canonical match key → { s1, s2, status, clock }
-let liveRefreshTimer = null;
+async function fetchStandings() {
+  try {
+    const res = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings');
+    if (!res.ok) return;
+    const data = await res.json();
+    const newElim = new Set();
+    (data.children || []).forEach(group => {
+      (group.standings?.entries || []).forEach(entry => {
+        const espnTeam = entry.team?.displayName || '';
+        const note = entry.note?.description || '';
+        if (note === 'Eliminated') newElim.add(ourName(espnTeam));
+      });
+    });
+    ELIM_SET = newElim;
+    applyEliminatedStyling();
+  } catch (e) {}
+}
 
-// Canonical key matching MATCHES array order — used to look up scores
-function matchKey(m) { return m.t1 + '|' + m.t2; }
-
-// ESPN name aliases: some ESPN team names differ from ours
-const ESPN_NAME = {
-  "Cote d'Ivoire": "Ivory Coast",
-  "Bosnia & Herz.": "Bosnia-Herzegovina",
-  "Cabo Verde": "Cape Verde",
-  "DR Congo": "Congo DR",
-  "Turkey": "Türkiye",
-  "USA": "United States",
-};
-function espnName(t) { return ESPN_NAME[t] || t; }
+function applyEliminatedStyling() {
+  document.querySelectorAll('#personFilter button[data-person]').forEach(btn => {
+    const person = btn.dataset.person;
+    if (person === 'all') return;
+    const team = Object.keys(PEOPLE).find(t => PEOPLE[t] === person);
+    const isElim = team && (ELIM_SET.has(team) || BEST8_MISSED.has(team) || KNOCKOUT_ELIM_SET.has(team));
+    btn.classList.toggle('eliminated', isElim);
+  });
+}
 
 async function fetchScores() {
   try {
-    const url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260627&limit=200';
+    const url = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260628-20260719&limit=100';
     const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
-    const events = data.events || [];
-
     const newScores = {};
-    events.forEach(ev => {
+
+    (data.events || []).forEach(ev => {
       const comp = ev.competitions?.[0];
       if (!comp) return;
       const teams = comp.competitors || [];
       if (teams.length < 2) return;
 
-      // ESPN returns home/away; find by order index (0=home, 1=away) or by homeAway field
       const home = teams.find(t => t.homeAway === 'home') || teams[0];
       const away = teams.find(t => t.homeAway === 'away') || teams[1];
-      const homeName = home.team?.displayName || home.team?.name || '';
-      const awayName = away.team?.displayName || away.team?.name || '';
+      const rawHome = home.team?.displayName || '';
+      const rawAway = away.team?.displayName || '';
+
+      // Resolve to our internal names (or keep placeholder if still TBD)
+      const t1 = isPlaceholder(rawHome) ? null : ourName(rawHome);
+      const t2 = isPlaceholder(rawAway) ? null : ourName(rawAway);
 
       const statusType = ev.status?.type?.name || 'STATUS_SCHEDULED';
-      const rawClock = ev.status?.displayClock || '';
-      const period = ev.status?.period || 0;
+      const rawClock   = ev.status?.displayClock || '';
+      const period     = ev.status?.period || 0;
 
       let status = 'pre';
-      if (statusType === 'STATUS_FINAL' || statusType === 'STATUS_FULL_TIME') status = 'ft';
+      let extra = '';
+      if (statusType === 'STATUS_FINAL_PEN') { status = 'ft'; extra = 'pen'; }
+      else if (statusType === 'STATUS_FINAL_AET') { status = 'ft'; extra = 'aet'; }
+      else if (statusType === 'STATUS_FINAL' || statusType === 'STATUS_FULL_TIME') status = 'ft';
       else if (statusType === 'STATUS_IN_PROGRESS' || statusType === 'STATUS_HALFTIME') status = 'live';
 
-      // Build a football-correct clock string
       let clockDisplay = '';
       if (status === 'live') {
         if (statusType === 'STATUS_HALFTIME') {
           clockDisplay = 'HT';
         } else {
-          // rawClock is typically "42:00" — extract the minute portion
           const mins = parseInt(rawClock.split(':')[0], 10) || 0;
           const regularMax = period === 1 ? 45 : 90;
-          if (mins > regularMax) {
-            clockDisplay = regularMax + '+' + (mins - regularMax) + "'";
-          } else {
-            clockDisplay = mins + "'";
-          }
+          clockDisplay = mins > regularMax ? regularMax + '+' + (mins - regularMax) + "'" : mins + "'";
         }
       }
 
       const s1 = parseInt(home.score ?? '0', 10);
       const s2 = parseInt(away.score ?? '0', 10);
 
-      // Match against our MATCHES array
-      MATCHES.forEach(m => {
-        const e1 = espnName(m.t1), e2 = espnName(m.t2);
-        if (
-          (homeName.includes(e1) || e1.includes(homeName)) &&
-          (awayName.includes(e2) || e2.includes(awayName))
-        ) {
-          newScores[matchKey(m)] = { s1, s2, status, clock: clockDisplay };
-        } else if (
-          (homeName.includes(e2) || e2.includes(homeName)) &&
-          (awayName.includes(e1) || e1.includes(awayName))
-        ) {
-          // ESPN has them reversed
-          newScores[matchKey(m)] = { s1: s2, s2: s1, status, clock: clockDisplay };
+      // Match our MATCHES entry by ESPN event ID
+      const match = MATCHES.find(m => m.espnId === ev.id);
+      if (match) {
+        // Update team names from ESPN if they are now confirmed
+        if (t1) match.t1 = t1;
+        if (t2) match.t2 = t2;
+        newScores[match.espnId] = { s1, s2, status, clock: clockDisplay, extra };
+
+        // Derive knockout eliminations from finished matches using ESPN's winner flag
+        if (status === 'ft' && t1 && t2) {
+          if (home.winner === false && away.winner === true) KNOCKOUT_ELIM_SET.add(t1);
+          else if (away.winner === false && home.winner === true) KNOCKOUT_ELIM_SET.add(t2);
         }
-      });
+      }
     });
 
     SCORES = newScores;
+    applyEliminatedStyling();
     renderSchedule();
-
-    // If any match is live, refresh every 60s; otherwise clear the timer
     const hasLive = Object.values(SCORES).some(s => s.status === 'live');
     clearTimeout(liveRefreshTimer);
-    if (hasLive) {
-      liveRefreshTimer = setTimeout(fetchScores, 60000);
-    }
-  } catch (e) {
-    // Silently fail — scores just won't show
-  }
+    if (hasLive) liveRefreshTimer = setTimeout(fetchScores, 60000);
+  } catch (e) {}
 }
 
-function getTz() {
-  return document.getElementById('tzSelect').value;
-}
+let currentStage = "all";
+let selectedPeople = new Set();
 
-function getEffectiveTz(match) {
-  const tz = getTz();
-  if (tz === 'local') return VENUE_TZ[match.venue] || 'America/New_York';
-  return tz;
-}
-
-function getLocalDateKey(ms, tz) {
-  return new Date(ms).toLocaleDateString('en-AU', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
-}
-
-function getLocalDateLabel(ms, tz) {
-  return new Date(ms).toLocaleDateString('en-AU', {
-    timeZone: tz, weekday:'long', day:'numeric', month:'long', year:'numeric'
-  });
-}
-
-function getTimeStr(ms, tz) {
-  return new Date(ms).toLocaleTimeString('en-AU', { timeZone: tz, hour:'numeric', minute:'2-digit', hour12:true });
-}
-
-function matchPassesFilters(m) {
-  if (currentGroup !== 'all' && m.group !== currentGroup) return false;
-  if (selectedPeople.size > 0) {
-    const p1 = PEOPLE[m.t1], p2 = PEOPLE[m.t2];
-    if (!selectedPeople.has(p1) && !selectedPeople.has(p2)) return false;
-  }
-  return true;
-}
+function matchKey(m) { return m.espnId; }
 
 function formatCountdown(ms) {
   const diff = ms - Date.now();
@@ -482,23 +380,51 @@ function formatCountdown(ms) {
   if (mins || parts.length === 0) parts.push(mins + (mins === 1 ? ' minute' : ' minutes'));
   return 'Begins in ' + parts.join(' ');
 }
-
 function tickCountdowns() {
   document.querySelectorAll('.match-card-countdown[data-ms]').forEach(el => {
     el.textContent = formatCountdown(parseInt(el.dataset.ms, 10));
   });
 }
-
 setInterval(tickCountdowns, 30000);
 
-function renderSchedule() {
-  const schedule = document.getElementById('schedule');
-  const filtered = MATCHES.filter(matchPassesFilters);
+function getTz() { return document.getElementById('tzSelect').value; }
 
-  // For "local" tz mode, we can't group by a single tz — use ET as the grouping key for ordering,
-  // but display each match in its own venue tz.
-  // For fixed tz, group by that tz's local date.
+function getEffectiveTz(match) {
+  const tz = getTz();
+  if (tz === 'local') return VENUE_TZ[match.venue] || 'America/New_York';
+  return tz;
+}
+
+function getLocalDateKey(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
+}
+function getLocalDateLabel(ms, tz) {
+  return new Date(ms).toLocaleDateString('en-AU', {
+    timeZone: tz, weekday:'long', day:'numeric', month:'long', year:'numeric'
+  });
+}
+function getTimeStr(ms, tz) {
+  return new Date(ms).toLocaleTimeString('en-AU', { timeZone: tz, hour:'numeric', minute:'2-digit', hour12:true });
+}
+
+function matchPassesFilters(m) {
+  if (currentStage !== 'all' && m.stage !== currentStage) return false;
+  if (selectedPeople.size > 0) {
+    const p1 = PEOPLE[m.t1], p2 = PEOPLE[m.t2];
+    if (!selectedPeople.has(p1) && !selectedPeople.has(p2)) return false;
+  }
+  return true;
+}
+
+function venueCity(venue) {
+  // Extract just the city from "Stadium Name, City" format
+  const comma = venue.lastIndexOf(',');
+  return comma !== -1 ? venue.slice(comma + 1).trim() : venue;
+}
+
+function renderSchedule() {
   const tzForGrouping = getTz() === 'local' ? 'America/New_York' : getTz();
+  const filtered = MATCHES.filter(matchPassesFilters);
 
   const byDay = {};
   const dayOrder = [];
@@ -509,114 +435,86 @@ function renderSchedule() {
   });
 
   const seen = new Set();
-  const uniqDays = dayOrder.filter(d => { if(seen.has(d)) return false; seen.add(d); return true; });
+  const uniqDays = dayOrder.filter(d => { if (seen.has(d)) return false; seen.add(d); return true; });
 
   let html = '';
   uniqDays.forEach(dayKey => {
     const matches = byDay[dayKey];
-    // Use first match's ms and the grouping tz for the day label
     const label = getLocalDateLabel(matches[0].ms, tzForGrouping);
     html += `<div class="day-block" data-ms="${matches[0].ms}"><div class="day-header">${label}</div><div class="matches-grid">`;
 
     matches.forEach(m => {
-      const tz = getEffectiveTz(m);
-      const timeStr = getTimeStr(m.ms, tz);
+      const timeStr = getTimeStr(m.ms, getEffectiveTz(m));
+      const isTbd1 = isPlaceholder(m.t1);
+      const isTbd2 = isPlaceholder(m.t2);
       const p1 = PEOPLE[m.t1] || '';
       const p2 = PEOPLE[m.t2] || '';
       const p1hl = selectedPeople.size > 0 && selectedPeople.has(p1);
       const p2hl = selectedPeople.size > 0 && selectedPeople.has(p2);
-      const sc = SCORES[matchKey(m)];
+      const sc = SCORES[m.espnId];
       const cardHl = p1hl || p2hl ? ' person-highlight' : '';
-      const venueLabel = getTz() === 'local' ? `${m.venue} (local)` : m.venue;
+      const city = venueCity(m.venue);
 
-      let metaHtml, topHtml = '', bottomHtml = '', s1Html = '', s2Html = '';
+      const flag1 = isTbd1 ? '' : (FLAGS[m.t1] || '🏳');
+      const flag2 = isTbd2 ? '' : (FLAGS[m.t2] || '🏳');
+
+      let topHtml = '', bottomHtml = '', s1Html = '', s2Html = '', metaHtml = '';
+
       if (sc && (sc.status === 'live' || sc.status === 'ft')) {
         const isLive = sc.status === 'live';
         let pillLabel;
         if (!isLive) {
-          pillLabel = 'Match Finished';
-        } else if (!sc.clock || sc.clock === 'HT') {
-          pillLabel = sc.clock === 'HT' ? 'Half Time' : 'Live';
-        } else {
-          pillLabel = `Live · ${sc.clock}`;
+          if (sc.extra === 'pen') pillLabel = 'Full Time (Pens)';
+          else if (sc.extra === 'aet') pillLabel = 'Full Time (AET)';
+          else pillLabel = 'Match Finished';
         }
+        else if (sc.clock === 'HT') { pillLabel = 'Half Time'; }
+        else if (sc.clock) { pillLabel = `Live · ${sc.clock}`; }
+        else { pillLabel = 'Live'; }
         const statusClass = isLive ? 'live' : 'ft';
         topHtml = `<div class="match-card-status"><span class="match-status-pill ${statusClass}">${pillLabel}</span></div>`;
         s1Html = `<span class="score-num">${sc.s1}</span>`;
         s2Html = `<span class="score-num">${sc.s2}</span>`;
-        metaHtml = `<div class="match-venue">${venueLabel}</div>`;
+        metaHtml = `<div class="match-venue">${city}</div>`;
       } else {
-        bottomHtml = `<div class="match-card-countdown countdown" data-ms="${m.ms}">${formatCountdown(m.ms)}</div>`;
-        metaHtml = `
-            <div class="match-time">${timeStr}</div>
-            <div class="match-venue">${venueLabel}</div>`;
+        bottomHtml = `<div class="match-card-countdown" data-ms="${m.ms}">${formatCountdown(m.ms)}</div>`;
+        metaHtml = `<div class="match-time">${timeStr}</div><div class="match-venue">${city}</div>`;
       }
 
-      html += `
-        <div class="match-card${cardHl}" data-group="${m.group}">
-          ${topHtml}
-          <span class="match-group-badge badge-${m.group.toLowerCase()}">GRP ${m.group}</span>
-          <div class="match-teams">
-            <div class="team-row-m">
-              <span class="team-flag">${FLAGS[m.t1]||'🏳'}</span>
-              <span class="team-name">${m.t1}</span>
-              <span class="team-person${p1hl?' highlighted':''}">${p1}</span>
-              ${s1Html}
-            </div>
-            <div class="vs-divider">vs</div>
-            <div class="team-row-m">
-              <span class="team-flag">${FLAGS[m.t2]||'🏳'}</span>
-              <span class="team-name">${m.t2}</span>
-              <span class="team-person${p2hl?' highlighted':''}">${p2}</span>
-              ${s2Html}
-            </div>
+      html += `<div class="match-card${cardHl}" data-stage="${m.stage}">
+        ${topHtml}
+        <span class="match-stage-badge badge-${m.stage === 'F' ? 'final' : m.stage.toLowerCase()}">${STAGE_LABELS[m.stage] || m.stage}</span>
+        <div class="match-teams">
+          <div class="team-row-m">
+            <span class="team-flag">${flag1}</span>
+            <span class="team-name${isTbd1 ? ' tbd' : ''}">${m.t1}</span>
+            <span class="team-person${p1hl ? ' highlighted' : ''}">${p1}</span>
+            ${s1Html}
           </div>
-          <div class="match-meta">${metaHtml}
+          <div class="vs-divider">vs</div>
+          <div class="team-row-m">
+            <span class="team-flag">${flag2}</span>
+            <span class="team-name${isTbd2 ? ' tbd' : ''}">${m.t2}</span>
+            <span class="team-person${p2hl ? ' highlighted' : ''}">${p2}</span>
+            ${s2Html}
           </div>
-          ${bottomHtml}
-        </div>`;
+        </div>
+        <div class="match-meta">${metaHtml}</div>
+        ${bottomHtml}
+      </div>`;
     });
-    html += `</div></div>`;
+    html += '</div></div>';
   });
 
-  schedule.innerHTML = html;
+  document.getElementById('schedule').innerHTML = html;
   document.getElementById('noMatches').style.display = filtered.length === 0 ? 'block' : 'none';
 }
 
-function updateGroupChip() {
-  const container = document.getElementById('groupActiveChips');
-  while (container.firstChild) container.removeChild(container.firstChild);
-  if (currentGroup !== 'all') {
-    const chip = document.createElement('button');
-    chip.style.cssText = 'padding:5px 12px;border-radius:20px;border:1px solid #111;background:#333;color:#fff;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;';
-    chip.textContent = 'Group ' + currentGroup + ' ✕';
-    chip.addEventListener('click', () => {
-      currentGroup = 'all';
-      document.querySelectorAll('#groupFilter button').forEach(b => b.classList.remove('active'));
-      document.querySelector('#groupFilter button[data-group="all"]').classList.add('active');
-      updateGroupChip();
-      renderSchedule();
-    });
-    container.appendChild(chip);
-  }
-}
-
-function filterGroup(btn) {
-  document.querySelectorAll('#groupFilter button').forEach(b => b.classList.remove('active'));
+function filterStage(btn) {
+  document.querySelectorAll('#stageFilter button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  currentGroup = btn.dataset.group;
-  updateGroupChip();
-  document.getElementById('groupFilterPanel').classList.remove('open');
-  document.getElementById('groupFilterToggle').classList.remove('open');
+  currentStage = btn.dataset.stage;
   renderSchedule();
-}
-
-function toggleGroupFilter() {
-  const panel = document.getElementById('groupFilterPanel');
-  const toggle = document.getElementById('groupFilterToggle');
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  toggle.classList.toggle('open', !isOpen);
 }
 
 function togglePersonFilter() {
@@ -640,7 +538,7 @@ function updateActiveChips() {
     const label = sourceBtn ? sourceBtn.textContent : person;
     const chip = document.createElement('button');
     chip.className = 'active';
-    chip.style.cssText = 'padding:5px 12px;border-radius:20px;border:1px solid #111;background:#333;color:#fff;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;';
+    chip.style.cssText = 'padding:5px 12px;border-radius:20px;border:1px solid #111;background:#333;color:#fff;font-size:12px;font-weight:500;cursor:pointer;';
     chip.textContent = label + ' ✕';
     chip.addEventListener('click', () => removePerson(person));
     container.appendChild(chip);
@@ -658,9 +556,33 @@ function removePerson(person) {
   renderSchedule();
 }
 
+const ELIM_MESSAGES = [
+  { top: "💀 Eliminated!", body: "Your team is out. It turns out you're not very good at this World Cup thing. Better luck in 2030!" },
+  { top: "🚫 Pack your bags!", body: "That team went home early. Turns out picking a winner is harder than it looks. No refunds." },
+  { top: "✈️ Gone home!", body: "Your team has left the building. The World Cup will continue without them — and without your glory." },
+  { top: "🪑 Bench warmer!", body: "Your team got knocked out. You can still watch the rest of the tournament, just not with any hope." },
+  { top: "😬 Ouch!", body: "Your team didn't make it past the group stage. The dream is over. The snacks are not." },
+  { top: "🗑️ Eliminated!", body: "Your team has been sent packing. Maybe next time pick a team that actually scores goals?" },
+];
+
+let elimToastTimer = null;
+function showElimToast() {
+  const msg = ELIM_MESSAGES[Math.floor(Date.now() / 1000) % ELIM_MESSAGES.length];
+  document.getElementById('elimToastTop').textContent = msg.top;
+  document.getElementById('elimToastBody').textContent = msg.body;
+  document.getElementById('elimToast').classList.add('show');
+  document.getElementById('elimOverlay').classList.add('show');
+  clearTimeout(elimToastTimer);
+  elimToastTimer = setTimeout(hideElimToast, 6000);
+}
+function hideElimToast() {
+  clearTimeout(elimToastTimer);
+  document.getElementById('elimToast').classList.remove('show');
+  document.getElementById('elimOverlay').classList.remove('show');
+}
+
 function filterPerson(btn) {
   const person = btn.dataset.person;
-
   if (person === 'all') {
     selectedPeople.clear();
     document.querySelectorAll('#personFilter button').forEach(b => b.classList.remove('active'));
@@ -668,8 +590,17 @@ function filterPerson(btn) {
     updateActiveChips();
     collapsePersonFilter();
   } else {
+    if (btn.classList.contains('eliminated')) {
+      // Show toast only if this person's team never played in the knockout stage
+      const team = Object.keys(PEOPLE).find(t => PEOPLE[t] === btn.dataset.person);
+      const hasKnockoutMatch = team && MATCHES.some(m => m.t1 === team || m.t2 === team);
+      if (!hasKnockoutMatch) {
+        showElimToast();
+        collapsePersonFilter();
+        return;
+      }
+    }
     document.querySelector('#personFilter button[data-person="all"]').classList.remove('active');
-
     if (selectedPeople.has(person)) {
       selectedPeople.delete(person);
       btn.classList.remove('active');
@@ -677,15 +608,12 @@ function filterPerson(btn) {
       selectedPeople.add(person);
       btn.classList.add('active');
     }
-
     if (selectedPeople.size === 0) {
       document.querySelector('#personFilter button[data-person="all"]').classList.add('active');
     }
-
     updateActiveChips();
     collapsePersonFilter();
   }
-
   renderSchedule();
 }
 
@@ -704,7 +632,6 @@ function scrollToUpcoming() {
   }
   if (!target) target = blocks[blocks.length - 1];
   if (!target) return;
-  // Measure all sticky elements so we don't scroll under them
   const stickyOffset = Array.from(document.querySelectorAll('header, .subheader'))
     .reduce((sum, el) => sum + el.offsetHeight, 0);
   const top = target.getBoundingClientRect().top + window.scrollY - stickyOffset - 12;
@@ -713,6 +640,7 @@ function scrollToUpcoming() {
 
 renderSchedule();
 fetchScores();
+fetchStandings();
 </script>
 </body>
 </html>
