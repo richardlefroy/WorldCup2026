@@ -336,6 +336,8 @@ async function fetchScores() {
 
       const s1 = parseInt(home.score ?? '0', 10);
       const s2 = parseInt(away.score ?? '0', 10);
+      const ps1 = home.shootoutScore != null ? parseInt(home.shootoutScore, 10) : null;
+      const ps2 = away.shootoutScore != null ? parseInt(away.shootoutScore, 10) : null;
 
       // Match our MATCHES entry by ESPN event ID
       const match = MATCHES.find(m => m.espnId === ev.id);
@@ -343,7 +345,7 @@ async function fetchScores() {
         // Update team names from ESPN if they are now confirmed
         if (t1) match.t1 = t1;
         if (t2) match.t2 = t2;
-        newScores[match.espnId] = { s1, s2, status, clock: clockDisplay, extra };
+        newScores[match.espnId] = { s1, s2, ps1, ps2, status, clock: clockDisplay, extra, w1: home.winner === true, w2: away.winner === true };
 
         // Derive knockout eliminations from finished matches using ESPN's winner flag
         if (status === 'ft' && t1 && t2) {
@@ -473,8 +475,10 @@ function renderSchedule() {
         else { pillLabel = 'Live'; }
         const statusClass = isLive ? 'live' : 'ft';
         topHtml = `<div class="match-card-status"><span class="match-status-pill ${statusClass}">${pillLabel}</span></div>`;
-        s1Html = `<span class="score-num">${sc.s1}</span>`;
-        s2Html = `<span class="score-num">${sc.s2}</span>`;
+        const penSuffix1 = (sc.extra === 'pen' && sc.ps1 != null) ? ` <span class="score-pen">(${sc.ps1})</span>` : '';
+        const penSuffix2 = (sc.extra === 'pen' && sc.ps2 != null) ? ` <span class="score-pen">(${sc.ps2})</span>` : '';
+        s1Html = `<span class="score-num">${sc.s1}</span>${penSuffix1}`;
+        s2Html = `<span class="score-num">${sc.s2}</span>${penSuffix2}`;
         metaHtml = `<div class="match-venue">${city}</div>`;
       } else {
         bottomHtml = `<div class="match-card-countdown" data-ms="${m.ms}">${formatCountdown(m.ms)}</div>`;
@@ -485,14 +489,14 @@ function renderSchedule() {
         ${topHtml}
         <span class="match-stage-badge badge-${m.stage === 'F' ? 'final' : m.stage.toLowerCase()}">${STAGE_LABELS[m.stage] || m.stage}</span>
         <div class="match-teams">
-          <div class="team-row-m">
+          <div class="team-row-m${sc && sc.status === 'ft' && sc.w2 && !sc.w1 ? ' loser' : ''}">
             <span class="team-flag">${flag1}</span>
             <span class="team-name${isTbd1 ? ' tbd' : ''}">${m.t1}</span>
             <span class="team-person${p1hl ? ' highlighted' : ''}">${p1}</span>
             ${s1Html}
           </div>
           <div class="vs-divider">vs</div>
-          <div class="team-row-m">
+          <div class="team-row-m${sc && sc.status === 'ft' && sc.w1 && !sc.w2 ? ' loser' : ''}">
             <span class="team-flag">${flag2}</span>
             <span class="team-name${isTbd2 ? ' tbd' : ''}">${m.t2}</span>
             <span class="team-person${p2hl ? ' highlighted' : ''}">${p2}</span>

@@ -404,6 +404,7 @@ async function fetchScores() {
       const s1 = parseInt(home.score ?? '0', 10);
       const s2 = parseInt(away.score ?? '0', 10);
 
+      const hw = home.winner === true, aw = away.winner === true;
       // Match against our MATCHES array
       MATCHES.forEach(m => {
         const e1 = espnName(m.t1), e2 = espnName(m.t2);
@@ -411,13 +412,13 @@ async function fetchScores() {
           (homeName.includes(e1) || e1.includes(homeName)) &&
           (awayName.includes(e2) || e2.includes(awayName))
         ) {
-          newScores[matchKey(m)] = { s1, s2, status, clock: clockDisplay };
+          newScores[matchKey(m)] = { s1, s2, status, clock: clockDisplay, w1: hw, w2: aw };
         } else if (
           (homeName.includes(e2) || e2.includes(homeName)) &&
           (awayName.includes(e1) || e1.includes(awayName))
         ) {
           // ESPN has them reversed
-          newScores[matchKey(m)] = { s1: s2, s2: s1, status, clock: clockDisplay };
+          newScores[matchKey(m)] = { s1: s2, s2: s1, status, clock: clockDisplay, w1: aw, w2: hw };
         }
       });
     });
@@ -557,14 +558,14 @@ function renderSchedule() {
           ${topHtml}
           <span class="match-group-badge badge-${m.group.toLowerCase()}">GRP ${m.group}</span>
           <div class="match-teams">
-            <div class="team-row-m">
+            <div class="team-row-m${sc && sc.status === 'ft' && sc.w2 && !sc.w1 ? ' loser' : ''}">
               <span class="team-flag">${FLAGS[m.t1]||'🏳'}</span>
               <span class="team-name">${m.t1}</span>
               <span class="team-person${p1hl?' highlighted':''}">${p1}</span>
               ${s1Html}
             </div>
             <div class="vs-divider">vs</div>
-            <div class="team-row-m">
+            <div class="team-row-m${sc && sc.status === 'ft' && sc.w1 && !sc.w2 ? ' loser' : ''}">
               <span class="team-flag">${FLAGS[m.t2]||'🏳'}</span>
               <span class="team-name">${m.t2}</span>
               <span class="team-person${p2hl?' highlighted':''}">${p2}</span>

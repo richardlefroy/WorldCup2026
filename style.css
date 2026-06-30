@@ -200,6 +200,9 @@ header {
 /* ── Team rows ── */
 .match-teams { flex: 1; min-width: 0; }
 .team-row-m { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+.team-row-m.loser { color: #aaa; }
+.team-row-m.loser .team-name,
+.team-row-m.loser .score-num { color: #aaa; }
 .team-flag { font-size: 18px; line-height: 1; width: 22px; flex-shrink: 0; }
 .team-name { font-size: 13px; font-weight: 500; color: #111; }
 .team-name.tbd { color: #aaa; font-style: italic; }
@@ -217,6 +220,7 @@ header {
 
 /* ── Score / status ── */
 .score-num { font-size: 18px; font-weight: 700; color: #111; line-height: 1; min-width: 22px; text-align: right; padding-left: 10px; flex-shrink: 0; }
+.score-pen { font-size: 12px; font-weight: 600; color: #666; padding-left: 2px; flex-shrink: 0; }
 
 .match-status-pill {
   display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
