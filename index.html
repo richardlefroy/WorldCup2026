@@ -312,16 +312,17 @@ async function fetchScores() {
       const t1 = isPlaceholder(rawHome) ? null : ourName(rawHome);
       const t2 = isPlaceholder(rawAway) ? null : ourName(rawAway);
 
-      const statusType = ev.status?.type?.name || 'STATUS_SCHEDULED';
-      const rawClock   = ev.status?.displayClock || '';
-      const period     = ev.status?.period || 0;
+      const statusType  = ev.status?.type?.name  || 'STATUS_SCHEDULED';
+      const statusState = ev.status?.type?.state || '';
+      const rawClock    = ev.status?.displayClock || '';
+      const period      = ev.status?.period || 0;
 
       let status = 'pre';
       let extra = '';
       if (statusType === 'STATUS_FINAL_PEN') { status = 'ft'; extra = 'pen'; }
       else if (statusType === 'STATUS_FINAL_AET') { status = 'ft'; extra = 'aet'; }
-      else if (statusType === 'STATUS_FINAL' || statusType === 'STATUS_FULL_TIME') status = 'ft';
-      else if (statusType === 'STATUS_IN_PROGRESS' || statusType === 'STATUS_HALFTIME') status = 'live';
+      else if (statusState === 'post') status = 'ft';
+      else if (statusState === 'in')   status = 'live';
 
       let clockDisplay = '';
       if (status === 'live') {
@@ -466,8 +467,8 @@ function renderSchedule() {
         const isLive = sc.status === 'live';
         let pillLabel;
         if (!isLive) {
-          if (sc.extra === 'pen') pillLabel = 'Full Time (Pens)';
-          else if (sc.extra === 'aet') pillLabel = 'Full Time (AET)';
+          if (sc.extra === 'pen') pillLabel = 'Match Finished (Penalties)';
+          else if (sc.extra === 'aet') pillLabel = 'Match Finished (AET)';
           else pillLabel = 'Match Finished';
         }
         else if (sc.clock === 'HT') { pillLabel = 'Half Time'; }

@@ -376,13 +376,14 @@ async function fetchScores() {
       const homeName = home.team?.displayName || home.team?.name || '';
       const awayName = away.team?.displayName || away.team?.name || '';
 
-      const statusType = ev.status?.type?.name || 'STATUS_SCHEDULED';
+      const statusType  = ev.status?.type?.name  || 'STATUS_SCHEDULED';
+      const statusState = ev.status?.type?.state || '';
       const rawClock = ev.status?.displayClock || '';
       const period = ev.status?.period || 0;
 
       let status = 'pre';
-      if (statusType === 'STATUS_FINAL' || statusType === 'STATUS_FULL_TIME') status = 'ft';
-      else if (statusType === 'STATUS_IN_PROGRESS' || statusType === 'STATUS_HALFTIME') status = 'live';
+      if (statusState === 'post') status = 'ft';
+      else if (statusState === 'in') status = 'live';
 
       // Build a football-correct clock string
       let clockDisplay = '';
