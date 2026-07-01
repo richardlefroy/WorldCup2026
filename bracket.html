@@ -12,28 +12,6 @@
   flex-direction: column;
   align-items: center;
 }
-.bracket-meta {
-  width: 100%;
-  max-width: 720px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.bracket-title-text {
-  font-size: 11px;
-  font-weight: 700;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.bracket-status {
-  font-size: 11px;
-  color: #aaa;
-  letter-spacing: 0.03em;
-}
 #bracket-svg-wrap {
   width: 100%;
   max-width: 720px;
@@ -45,13 +23,9 @@
   display: block;
   overflow: visible;
 }
-.b-line      { fill: none; stroke: #aaa; stroke-width: 1.5; }
-.b-line.won  { stroke: #f7c948; stroke-width: 2.2; }
-.b-line.live { stroke: #22c55e; stroke-width: 2; }
-.b-disc      { cursor: default; }
-.b-disc.dim  { opacity: 0.28; }
-.b-ring      { fill: none; }
-.b-ring.dim  { opacity: 0.22; }
+.b-line      { fill: none; stroke: #999; stroke-width: 1.5; }
+.b-line.won  { stroke: #999; stroke-width: 1.5; }
+.b-line.live { stroke: #22c55e; stroke-width: 1.5; }
 .b-label {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 8.5px;
@@ -62,36 +36,9 @@
   pointer-events: none;
   fill: #bbb;
 }
-.b-label.active { fill: #666; }
-.b-label.won    { fill: #b89010; }
-.b-label-person { fill: #999; font-weight: 400; font-size: 7.5px; }
-.b-empty-disc   { fill: #ece9e4; stroke: #999; stroke-width: 1.5; }
-.b-empty-qs {
-  fill: #ccc;
-  font-family: -apple-system, sans-serif;
-  text-anchor: middle;
-  dominant-baseline: central;
-  pointer-events: none;
-}
-.bracket-legend {
-  display: flex;
-  gap: 16px;
-  font-size: 11px;
-  color: #888;
-  flex-wrap: wrap;
-  margin-top: 6px;
-}
-.bracket-legend span { display: flex; align-items: center; gap: 5px; }
-.bracket-legend i {
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.leg-active { background: #555; }
-.leg-elim   { background: #ddd; border: 1px solid #ccc; }
-.leg-won    { background: #f7c948; }
-.leg-live   { background: #22c55e; }
+.b-label.active  { fill: #555; }
+.b-label.won     { fill: #b89010; }
+.b-label-person  { fill: #999; font-weight: 400; font-size: 7.5px; }
 #b-tip {
   position: fixed;
   background: #111;
@@ -124,7 +71,6 @@
 </header>
 
 <div class="bracket-page">
-  <div id="bracketStatus" style="display:none"></div>
   <div id="bracket-svg-wrap">
     <svg id="bracket-svg" viewBox="-360 -360 720 720"></svg>
   </div>
@@ -136,47 +82,69 @@
 'use strict';
 
 // =============================================================================
-// BRACKET MATCH DATA
-// ESPN IDs verified against live API. Adjacent pairs in R32[] share an R16 node.
-// Clockwise slot order from top:
-//   R32[0]  slots 0,1   Germany vs Paraguay
-//   R32[1]  slots 2,3   Brazil vs Japan
-//   R32[2]  slots 4,5   Ivory Coast vs Norway
-//   R32[3]  slots 6,7   Mexico vs Ecuador
-//   R32[4]  slots 8,9   England vs DR Congo
-//   R32[5]  slots 10,11 Argentina vs Cape Verde
-//   R32[6]  slots 12,13 Australia vs Egypt
-//   R32[7]  slots 14,15 Switzerland vs Algeria
-//   R32[8]  slots 16,17 Colombia vs Ghana
-//   R32[9]  slots 18,19 Belgium vs Senegal
-//   R32[10] slots 20,21 USA vs Bosnia
-//   R32[11] slots 22,23 Spain vs Austria
-//   R32[12] slots 24,25 Portugal vs Croatia
-//   R32[13] slots 26,27 Morocco vs Netherlands
-//   R32[14] slots 28,29 Canada vs South Africa
-//   R32[15] slots 30,31 France vs Sweden
+// SLOT ORDER  (clockwise from just past 12 o'clock)
+//
+// Slots are paired: match i uses slots i*2 and i*2+1.
+// Adjacent matches feed a shared R16 node.
+//
+// match 0  slots  0, 1  Brazil        vs Japan
+// match 1  slots  2, 3  Ivory Coast   vs Norway
+// match 2  slots  4, 5  Mexico        vs Ecuador
+// match 3  slots  6, 7  England       vs DR Congo
+// match 4  slots  8, 9  Argentina     vs Cabo Verde
+// match 5  slots 10,11  Australia     vs Egypt
+// match 6  slots 12,13  Switzerland   vs Algeria
+// match 7  slots 14,15  Colombia      vs Ghana
+// match 8  slots 16,17  Belgium       vs Senegal
+// match 9  slots 18,19  USA           vs Bosnia
+// match 10 slots 20,21  Spain         vs Austria
+// match 11 slots 22,23  Portugal      vs Croatia
+// match 12 slots 24,25  Netherlands   vs Morocco
+// match 13 slots 26,27  South Africa  vs Canada
+// match 14 slots 28,29  France        vs Sweden
+// match 15 slots 30,31  Germany       vs Paraguay
+//
+// R16 pairs  (match winners feed next ring node):
+//   R16[0]  winner m0  vs winner m1   (Brazil/Japan  vs  CIV/Norway)
+//   R16[1]  winner m2  vs winner m3   (Mexico/Ecuador vs England/Congo)
+//   R16[2]  winner m4  vs winner m5   (Argentina/CV  vs Australia/Egypt)
+//   R16[3]  winner m6  vs winner m7   (Swi/Alg       vs Col/Ghana)
+//   R16[4]  winner m8  vs winner m9   (Bel/Sen        vs USA/Bosnia)
+//   R16[5]  winner m10 vs winner m11  (Spain/Aut      vs Por/Cro)
+//   R16[6]  winner m12 vs winner m13  (Ned/Mar        vs RSA/Can)
+//   R16[7]  winner m14 vs winner m15  (Fra/Swe        vs Ger/Par)
+//
+// QF pairs:
+//   QF[0]  R16[0] vs R16[1]
+//   QF[1]  R16[2] vs R16[3]
+//   QF[2]  R16[4] vs R16[5]
+//   QF[3]  R16[6] vs R16[7]
+//
+// SF pairs:
+//   SF[0]  QF[0] vs QF[1]
+//   SF[1]  QF[2] vs QF[3]
 // =============================================================================
 
+// ESPN match IDs — keyed to the slot order above
 var R32 = [
-  '760489', // 0  Germany vs Paraguay
-  '760487', // 1  Brazil vs Japan
-  '760490', // 2  Ivory Coast vs Norway
-  '760491', // 3  Mexico vs Ecuador
-  '760495', // 4  England vs DR Congo
-  '760500', // 5  Argentina vs Cape Verde
-  '760499', // 6  Australia vs Egypt
-  '760498', // 7  Switzerland vs Algeria
-  '760501', // 8  Colombia vs Ghana
-  '760493', // 9  Belgium vs Senegal
-  '760494', // 10 USA vs Bosnia
-  '760497', // 11 Spain vs Austria
-  '760496', // 12 Portugal vs Croatia
-  '760488', // 13 Morocco vs Netherlands
-  '760486', // 14 Canada vs South Africa
-  '760492', // 15 France vs Sweden
+  '760487', // 0  Brazil vs Japan
+  '760490', // 1  Ivory Coast vs Norway
+  '760491', // 2  Mexico vs Ecuador
+  '760495', // 3  England vs DR Congo
+  '760500', // 4  Argentina vs Cabo Verde
+  '760499', // 5  Australia vs Egypt
+  '760498', // 6  Switzerland vs Algeria
+  '760501', // 7  Colombia vs Ghana
+  '760493', // 8  Belgium vs Senegal
+  '760494', // 9  USA vs Bosnia
+  '760497', // 10 Spain vs Austria
+  '760496', // 11 Portugal vs Croatia
+  '760488', // 12 Netherlands vs Morocco
+  '760486', // 13 South Africa vs Canada
+  '760492', // 14 France vs Sweden
+  '760489', // 15 Germany vs Paraguay
 ];
 
-// R16[i] = winner of R32[i*2] vs winner of R32[i*2+1]
 var R16 = [
   '760503', // 0  winner R32[0] vs winner R32[1]
   '760504', // 1  winner R32[2] vs winner R32[3]
@@ -188,85 +156,68 @@ var R16 = [
   '760502', // 7  winner R32[14] vs winner R32[15]
 ];
 
-// QF[i] = winner of R16[i*2] vs winner of R16[i*2+1]
 var QF = [
-  '760510', // 0  winner R16[0] vs winner R16[1]
-  '760511', // 1  winner R16[2] vs winner R16[3]
-  '760512', // 2  winner R16[4] vs winner R16[5]
-  '760513', // 3  winner R16[6] vs winner R16[7]
+  '760510', // 0  R16[0] vs R16[1]
+  '760511', // 1  R16[2] vs R16[3]
+  '760512', // 2  R16[4] vs R16[5]
+  '760513', // 3  R16[6] vs R16[7]
 ];
 
-// SF[i] = winner of QF[i*2] vs winner of QF[i*2+1]
 var SF = [
-  '760514', // 0  winner QF[0] vs winner QF[1]
-  '760515', // 1  winner QF[2] vs winner QF[3]
+  '760514', // 0  QF[0] vs QF[1]
+  '760515', // 1  QF[2] vs QF[3]
 ];
 
 var FINAL_ID = '760517';
 
 // =============================================================================
 // GEOMETRY
-// 32 team slots evenly spaced around 360°. Each slot = 11.25°.
-// Slot 0 is offset by -half-slot so pair (0,1) straddles 12 o'clock.
 //
-// Node angles:
-//   R16 node i  = midpoint of slots i*2 and i*2+1  = i * 22.5°
-//   QF  node i  = midpoint of R16 nodes i*2 and i*2+1
-//   SF  node i  = midpoint of QF  nodes i*2 and i*2+1
+// 32 slots, 11.25° each, clockwise from top.
+// Slot 0 starts at the top (0°) so Brazil is just clockwise of 12 o'clock.
 //
-// All lines are straight segments: no curves, no elbows.
+// slotAngle(s)  = s * 11.25°          (slot centre)
+// joinAngle(i)  = midpoint of slots i*2 and i*2+1  = (i*2 + 0.5) * 11.25°
+// All inner ring angles derive by averaging their feeder angles.
 // =============================================================================
 
-var SLOT_DEG = 360 / 32; // 11.25
+var SLOT_DEG = 360 / 32; // 11.25°
 
 function slotAngle(s) {
-  // offset by +0.5 so pairs sit at slot centres, finals align horizontally
-  return (s + 0.5) * SLOT_DEG;
+  return s * SLOT_DEG + 5.625;
 }
 
-// joinAngle(i): angle of the join node for R32 match i
-// = midpoint of slot i*2 and slot i*2+1
-// slotAngle(i*2) = (i*2 - 0.5)*SLOT_DEG, slotAngle(i*2+1) = (i*2 + 0.5)*SLOT_DEG
-// midpoint = i * 2 * SLOT_DEG
 function joinAngle(i) {
-  return (i * 2 + 1) * SLOT_DEG;
+  return (slotAngle(i * 2) + slotAngle(i * 2 + 1)) / 2;
 }
 
-// qfAngle(i): midpoint of the 2 join nodes that feed R16 match i
-// R16[i] covers join nodes i*2 and i*2+1
-function qfAngle(i) {
+function r16Angle(i) {
   return (joinAngle(i * 2) + joinAngle(i * 2 + 1)) / 2;
 }
 
-// sfAngle(i): midpoint of the 2 QF nodes that feed SF match i
-// SF node i sits between qfPos[i*2] and qfPos[i*2+1]
-// qfAngle(i*2) and qfAngle(i*2+1) are each midpoints of 2 join nodes
+function qfAngle(i) {
+  return (r16Angle(i * 2) + r16Angle(i * 2 + 1)) / 2;
+}
+
 function sfAngle(i) {
   return (qfAngle(i * 2) + qfAngle(i * 2 + 1)) / 2;
 }
 
-// finAngle(i): midpoint of the 2 SF nodes that feed the final
-// fin node i sits between sfPos[i*2] and sfPos[i*2+1]
 function finAngle(i) {
   return (sfAngle(i * 2) + sfAngle(i * 2 + 1)) / 2;
 }
 
-// Keep r16Angle as an alias for joinAngle (used in join node position array)
-function r16Angle(i) {
-  return joinAngle(i);
-}
-
-// Convert polar (degrees from top, clockwise) + radius to x,y
+// polar: degrees clockwise from top → {x, y}
 function polar(deg, r) {
   var rad = (deg - 90) * Math.PI / 180;
   return { x: r * Math.cos(rad), y: r * Math.sin(rad) };
 }
 
-var RADII = { r32: 300, r16: 232, qf: 167, sf: 107, fin: 55 };
-var NR    = { r32: 20,  r16: 18,  qf: 16,  sf: 15,  fin: 17 };
+var RADII = { r32: 300, join: 240, r16: 185, qf: 130, sf: 82, fin: 44 };
+var NR    = { r32: 19,  join: 16,  r16: 14,  qf: 13,  sf: 13, fin: 16 };
 
 // =============================================================================
-// TEAM METADATA
+// TEAM DATA
 // =============================================================================
 
 var ESPN_NORM = {
@@ -275,49 +226,46 @@ var ESPN_NORM = {
   "Cote d'Ivoire":       'CIV',
   'Bosnia-Herzegovina':  'BIH',
   'Cape Verde':          'CPV',
+  'Cabo Verde':          'CPV',
   'Congo DR':            'COD',
-  'South Korea':         'KOR',
+  'DR Congo':            'COD',
 };
 
 function normName(n) {
   return ESPN_NORM[n] || n;
 }
 
-// ISO 3166-1 alpha-2 codes for flagcdn.com
 var FLAG_ISO = {
-  'Argentina':    'ar', 'Brazil':       'br', 'Uruguay':      'uy',
-  'Colombia':     'co', 'Ecuador':      'ec', 'Paraguay':     'py',
-  'USA':          'us', 'Mexico':       'mx', 'Canada':       'ca',
-  'France':       'fr', 'Spain':        'es', 'Portugal':     'pt',
-  'Germany':      'de', 'Netherlands':  'nl', 'England':      'gb-eng',
-  'Belgium':      'be', 'Austria':      'at', 'Croatia':      'hr',
-  'Switzerland':  'ch', 'Sweden':       'se', 'Norway':       'no',
-  'Morocco':      'ma', 'Senegal':      'sn', 'CIV':          'ci',
-  'Egypt':        'eg', 'Algeria':      'dz', 'Ghana':        'gh',
-  'Japan':        'jp', 'KOR':          'kr', 'Australia':    'au',
-  'BIH':          'ba', 'CPV':          'cv', 'COD':          'cd',
-  'South Africa': 'za',
+  'Argentina':'ar',   'Brazil':'br',       'Colombia':'co',    'Ecuador':'ec',
+  'Paraguay':'py',    'USA':'us',           'Mexico':'mx',      'Canada':'ca',
+  'France':'fr',      'Spain':'es',         'Portugal':'pt',    'Germany':'de',
+  'Netherlands':'nl', 'England':'gb-eng',   'Belgium':'be',     'Austria':'at',
+  'Croatia':'hr',     'Switzerland':'ch',   'Sweden':'se',      'Norway':'no',
+  'Morocco':'ma',     'Senegal':'sn',       'CIV':'ci',         'Egypt':'eg',
+  'Algeria':'dz',     'Ghana':'gh',         'Japan':'jp',       'Australia':'au',
+  'BIH':'ba',         'CPV':'cv',           'COD':'cd',         'South Africa':'za',
+  'South Korea':'kr', 'KOR':'kr',
 };
 
 function flagUrl(name) {
   var key = normName(name);
   var iso = FLAG_ISO[key] || FLAG_ISO[name];
-  if (!iso) return null;
-  return 'https://flagcdn.com/w80/' + iso + '.png';
+  return iso ? 'https://flagcdn.com/w80/' + iso + '.png' : null;
 }
 
 var SHORT = {
-  'Argentina':'ARG', 'Brazil':'BRA', 'Uruguay':'URU', 'Colombia':'COL',
-  'Ecuador':'ECU', 'Paraguay':'PAR', 'USA':'USA', 'Mexico':'MEX',
-  'Canada':'CAN', 'France':'FRA', 'Spain':'ESP', 'Portugal':'POR',
-  'Germany':'GER', 'Netherlands':'NED', 'England':'ENG', 'Belgium':'BEL',
-  'Austria':'AUT', 'Croatia':'CRO', 'Switzerland':'SUI', 'Sweden':'SWE',
-  'Norway':'NOR', 'Morocco':'MAR', 'Senegal':'SEN', 'CIV':'CIV',
-  'Egypt':'EGY', 'Algeria':'ALG', 'Ghana':'GHA', 'Japan':'JPN',
-  'KOR':'KOR', 'Australia':'AUS', 'BIH':'BIH', 'CPV':'CPV',
-  'COD':'COD', 'South Africa':'RSA', 'South Korea':'KOR',
-  'United States':'USA', 'Ivory Coast':'CIV', "Cote d'Ivoire":'CIV',
-  'Bosnia-Herzegovina':'BIH', 'Cape Verde':'CPV', 'Congo DR':'COD',
+  'Argentina':'ARG',    'Brazil':'BRA',       'Colombia':'COL',   'Ecuador':'ECU',
+  'Paraguay':'PAR',     'USA':'USA',           'Mexico':'MEX',     'Canada':'CAN',
+  'France':'FRA',       'Spain':'ESP',         'Portugal':'POR',   'Germany':'GER',
+  'Netherlands':'NED',  'England':'ENG',       'Belgium':'BEL',    'Austria':'AUT',
+  'Croatia':'CRO',      'Switzerland':'SUI',   'Sweden':'SWE',     'Norway':'NOR',
+  'Morocco':'MAR',      'Senegal':'SEN',       'CIV':'CIV',        'Egypt':'EGY',
+  'Algeria':'ALG',      'Ghana':'GHA',         'Japan':'JPN',      'Australia':'AUS',
+  'BIH':'BIH',          'CPV':'CPV',           'COD':'COD',        'South Africa':'RSA',
+  'South Korea':'KOR',  'KOR':'KOR',
+  'United States':'USA','Ivory Coast':'CIV',   "Cote d'Ivoire":'CIV',
+  'Bosnia-Herzegovina':'BIH', 'Cape Verde':'CPV', 'Cabo Verde':'CPV',
+  'Congo DR':'COD',     'DR Congo':'COD',
 };
 
 function shortName(name) {
@@ -326,8 +274,30 @@ function shortName(name) {
   return SHORT[key] || SHORT[name] || name.slice(0, 3).toUpperCase();
 }
 
+var PEOPLE = {
+  'Brazil':'Joy',         'Japan':'Francesca',    'CIV':'Olive E',      'Norway':'Tessa',
+  'Mexico':'Katy',        'Ecuador':'Nic T',      'England':'Lily',     'COD':'JoyJoy',
+  'Argentina':'Louis',    'CPV':'Leah',            'Australia':'Rosa',   'Egypt':'Susan',
+  'Switzerland':'Renate', 'Algeria':'Tenille',    'Colombia':'Sal Edmonds', 'Ghana':'Alex L',
+  'Belgium':'Lucy',       'Senegal':'James A',    'USA':'Sarah',        'BIH':'Finn',
+  'Spain':'Georgette',    'Austria':'Elliot',     'Portugal':'Mike S',  'Croatia':'Mila',
+  'Netherlands':'Sophie', 'Morocco':'Matty',      'South Africa':'Rod', 'Canada':'Ted',
+  'France':'Taki',        'Sweden':'Ewen',        'Germany':'Ben',      'Paraguay':'Olive P',
+  // alternate spellings
+  'Ivory Coast':'Olive E',  "Cote d'Ivoire":'Olive E',
+  'Cape Verde':'Leah',      'Cabo Verde':'Leah',
+  'DR Congo':'JoyJoy',      'Congo DR':'JoyJoy',
+  'Bosnia-Herzegovina':'Finn',
+};
+
+function personFor(name) {
+  if (!name) return null;
+  var key = normName(name);
+  return PEOPLE[key] || PEOPLE[name] || null;
+}
+
 // =============================================================================
-// SCORE DATA  (populated by ESPN fetch)
+// SCORE DATA
 // =============================================================================
 
 var SCORES = {};
@@ -336,9 +306,7 @@ function isPlaceholder(n) {
   return !n || n === 'TBD' || /^(Group|Round of|Quarter|Semi|Third|Winner|Loser)/i.test(n);
 }
 
-function getScore(id) {
-  return SCORES[id] || null;
-}
+function getScore(id) { return SCORES[id] || null; }
 
 function getWinner(id) {
   var s = SCORES[id];
@@ -349,160 +317,103 @@ function getWinner(id) {
 }
 
 // =============================================================================
-// PEOPLE ASSIGNMENTS
-// =============================================================================
-
-var PEOPLE = {
-  'Mexico':'Katy', 'South Africa':'Rod', 'Canada':'Ted', 'Switzerland':'Renate',
-  'Brazil':'Joy', 'Morocco':'Matty', 'USA':'Sarah', 'Paraguay':'Olive P',
-  'Australia':'Rosa', 'Germany':'Ben', "Cote d'Ivoire":'Olive E', 'Ecuador':'Nic T',
-  'Netherlands':'Sophie', 'Japan':'Francesca', 'Sweden':'Ewen',
-  'Belgium':'Lucy', 'Egypt':'Susan', 'Spain':'Georgette', 'Cabo Verde':'Leah',
-  'Uruguay':'Richie', 'France':'Taki', 'Senegal':'James A', 'Norway':'Tessa',
-  'Argentina':'Louis', 'Algeria':'Tenille', 'Austria':'Elliot',
-  'Portugal':'Mike S', 'DR Congo':'JoyJoy', 'Congo DR':'JoyJoy', 'COD':'JoyJoy',
-  'Colombia':'Sal Edmonds',
-  'England':'Lily', 'Croatia':'Mila', 'Ghana':'Alex L',
-  'Bosnia & Herz.':'Finn', 'Bosnia-Herzegovina':'Finn', 'BIH':'Finn',
-  'Ivory Coast':'Olive E', 'CIV':'Olive E',
-  'Cape Verde':'Leah', 'Cabo Verde':'Leah', 'CPV':'Leah',
-};
-
-function personFor(name) {
-  if (!name) return null;
-  var key = normName(name);
-  return PEOPLE[key] || PEOPLE[name] || null;
-}
-
-// =============================================================================
 // SVG HELPERS
 // =============================================================================
 
 var NS  = 'http://www.w3.org/2000/svg';
 var svg = document.getElementById('bracket-svg');
+var _clipId = 0;
 
 function svgEl(tag, attrs) {
   var e = document.createElementNS(NS, tag);
   var keys = Object.keys(attrs || {});
-  for (var k = 0; k < keys.length; k++) {
-    e.setAttribute(keys[k], attrs[keys[k]]);
-  }
+  for (var k = 0; k < keys.length; k++) e.setAttribute(keys[k], attrs[keys[k]]);
   return e;
 }
 
-function line(x1, y1, x2, y2, cls) {
+function seg(x1, y1, x2, y2, cls) {
   var l = svgEl('line', { x1: x1, y1: y1, x2: x2, y2: y2 });
   l.classList.add('b-line');
   if (cls) l.classList.add(cls);
   return l;
 }
 
-// Unique clip ID counter so each node gets its own clipPath
-var _clipId = 0;
-
 function makeNode(x, y, r, teamName, scoreId, eliminated) {
   var g = svgEl('g');
+  if (!teamName) {
+    var emp = svgEl('circle', { cx: x, cy: y, r: r, fill: '#e8e5e0', stroke: '#bbb', 'stroke-width': 1.2 });
+    g.appendChild(emp);
+    var qt = svgEl('text', { x: x, y: y, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': Math.round(r * 0.65), fill: '#ccc',
+      'font-family': "-apple-system, sans-serif", 'pointer-events': 'none' });
+    qt.textContent = '?';
+    g.appendChild(qt);
+    return g;
+  }
 
-  if (teamName) {
-    var dim  = !!eliminated;
-    var s    = scoreId ? getScore(scoreId) : null;
-    var live = s && s.status === 'live';
-    var url  = flagUrl(teamName);
+  var dim  = !!eliminated;
+  var s    = scoreId ? getScore(scoreId) : null;
+  var live = s && s.status === 'live';
+  var url  = flagUrl(teamName);
 
-    // Outer ring (live indicator)
-    var ring = svgEl('circle', {
-      cx: x, cy: y, r: r + 3,
-      fill: 'none',
-      stroke: live ? '#22c55e' : (dim ? '#ddd' : '#bbb'),
-      'stroke-width': live ? 1.8 : 0.8,
+  if (url) {
+    var cid = 'cp' + (++_clipId);
+    var defsEl = svg.querySelector('defs');
+    var cp = svgEl('clipPath', { id: cid });
+    cp.appendChild(svgEl('circle', { cx: x, cy: y, r: r }));
+    defsEl.appendChild(cp);
+
+    var imgW = r * 3, imgH = r * 2;
+    var img = svgEl('image', {
+      x: x - imgW / 2, y: y - imgH / 2,
+      width: imgW, height: imgH,
+      href: url,
+      'clip-path': 'url(#' + cid + ')',
+      preserveAspectRatio: 'xMidYMid slice',
+      'pointer-events': 'all',
     });
-    ring.classList.add('b-ring');
-    if (dim) ring.classList.add('dim');
-    g.appendChild(ring);
-
-    if (url) {
-      // Unique clipPath for this node
-      var cid = 'cp' + (++_clipId);
-
-      // clipPath must live in the SVG defs — append directly to svg's first defs child
-      var defsEl = svg.querySelector('defs');
-      var cp = svgEl('clipPath', { id: cid });
-      cp.appendChild(svgEl('circle', { cx: x, cy: y, r: r }));
-      defsEl.appendChild(cp);
-
-      // Flag image — sized to fill the circle (flags are ~3:2, so height = 2r, width = 3r centred)
-      var imgW = r * 3;
-      var imgH = r * 2;
-      var img = svgEl('image', {
-        x: x - imgW / 2, y: y - imgH / 2,
-        width: imgW, height: imgH,
-        href: url,
-        'clip-path': 'url(#' + cid + ')',
-        preserveAspectRatio: 'xMidYMid slice',
-        'pointer-events': 'all',
-      });
-      if (dim) img.style.opacity = '0.3';
-      if (scoreId) {
-        (function(eid, tname) {
-          img.addEventListener('mouseenter', function(e) { showTip(e, tname, eid); });
-          img.addEventListener('mousemove', moveTip);
-          img.addEventListener('mouseleave', hideTip);
-        }(scoreId, teamName));
-      }
-      g.appendChild(img);
-
-      // Border circle on top of image
-      var border = svgEl('circle', {
-        cx: x, cy: y, r: r,
-        fill: 'none', stroke: dim ? '#ccc' : '#999', 'stroke-width': 1.5,
-        'pointer-events': 'none',
-      });
-      g.appendChild(border);
-
-    } else {
-      // Fallback: white disc with country code text
-      var disc = svgEl('circle', { cx: x, cy: y, r: r, fill: '#fff', stroke: '#999', 'stroke-width': 1.5 });
-      if (dim) disc.style.opacity = '0.3';
-      if (scoreId) {
-        (function(eid, tname) {
-          disc.addEventListener('mouseenter', function(e) { showTip(e, tname, eid); });
-          disc.addEventListener('mousemove', moveTip);
-          disc.addEventListener('mouseleave', hideTip);
-        }(scoreId, teamName));
-      }
-      g.appendChild(disc);
-      var code = svgEl('text', {
-        x: x, y: y, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-        'font-size': Math.round(r * 0.55), fill: '#555', 'pointer-events': 'none',
-        'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        'font-weight': 600,
-      });
-      code.textContent = shortName(teamName);
-      g.appendChild(code);
+    if (dim) img.setAttribute('filter', 'url(#greyscale)');
+    if (scoreId) {
+      (function(eid, tn) {
+        img.addEventListener('mouseenter', function(e) { showTip(e, tn, eid); });
+        img.addEventListener('mousemove', moveTip);
+        img.addEventListener('mouseleave', hideTip);
+      }(scoreId, teamName));
     }
+    g.appendChild(img);
+
+
 
   } else {
-    // Empty / TBD slot
-    var emptyDisc = svgEl('circle', { cx: x, cy: y, r: r, fill: '#ece9e4', stroke: '#999', 'stroke-width': 1.5 });
-    emptyDisc.classList.add('b-empty-disc');
-    g.appendChild(emptyDisc);
-    var qs = svgEl('text', { x: x, y: y, 'font-size': Math.round(r * 0.6) });
-    qs.classList.add('b-empty-qs');
-    qs.textContent = '?';
-    g.appendChild(qs);
+    var disc = svgEl('circle', { cx: x, cy: y, r: r,
+      fill: dim ? '#e8e5e0' : '#fff' });
+    if (scoreId) {
+      (function(eid, tn) {
+        disc.addEventListener('mouseenter', function(e) { showTip(e, tn, eid); });
+        disc.addEventListener('mousemove', moveTip);
+        disc.addEventListener('mouseleave', hideTip);
+      }(scoreId, teamName));
+    }
+    g.appendChild(disc);
+    var code = svgEl('text', { x: x, y: y, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': Math.round(r * 0.55), fill: dim ? '#bbb' : '#555',
+      'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      'font-weight': 600, 'pointer-events': 'none' });
+    code.textContent = shortName(teamName);
+    g.appendChild(code);
   }
 
   return g;
 }
 
+// Label pushed outward from node in the direction of angleDeg
 function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
-  var push = nodeR + 15;
+  var push = nodeR + 14;
   var rad  = (angleDeg - 90) * Math.PI / 180;
   var lx   = x + Math.cos(rad) * push;
   var ly   = y + Math.sin(rad) * push;
 
   if (person) {
-    // Two-line label: country code on first line, person name on second
     var g = svgEl('g');
     var t1 = svgEl('text', { x: lx, y: ly - 5 });
     t1.classList.add('b-label');
@@ -510,8 +421,7 @@ function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
     t1.textContent = text;
     g.appendChild(t1);
     var t2 = svgEl('text', { x: lx, y: ly + 5 });
-    t2.classList.add('b-label');
-    t2.classList.add('b-label-person');
+    t2.classList.add('b-label', 'b-label-person');
     t2.textContent = person;
     g.appendChild(t2);
     return g;
@@ -529,271 +439,224 @@ function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
 // =============================================================================
 
 function build() {
-  // Clear SVG
   while (svg.lastChild) svg.removeChild(svg.lastChild);
 
-  // ── Background + glow defs ──
+  // Defs
   var defs = svgEl('defs');
   var rg = svgEl('radialGradient', { id: 'cg', cx: '50%', cy: '50%', r: '50%' });
-  var stops = [
-    { offset: '0%',   color: '#f7c948', opacity: '0.15' },
-    { offset: '40%',  color: '#f7c948', opacity: '0.04' },
-    { offset: '100%', color: '#f2f1ed', opacity: '0' },
-  ];
-  for (var si = 0; si < stops.length; si++) {
-    rg.appendChild(svgEl('stop', {
-      offset: stops[si].offset,
-      'stop-color': stops[si].color,
-      'stop-opacity': stops[si].opacity,
-    }));
-  }
+  [['0%','#f7c948','0.14'], ['40%','#f7c948','0.04'], ['100%','#f2f1ed','0']].forEach(function(s) {
+    rg.appendChild(svgEl('stop', { offset: s[0], 'stop-color': s[1], 'stop-opacity': s[2] }));
+  });
   defs.appendChild(rg);
+  // Greyscale filter for eliminated teams
+  var flt = svgEl('filter', { id: 'greyscale' });
+  flt.appendChild(svgEl('feColorMatrix', { type: 'saturate', values: '0' }));
+  defs.appendChild(flt);
   svg.appendChild(defs);
 
+  // Background
   svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 360, fill: '#f2f1ed' }));
   svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 160, fill: 'url(#cg)' }));
-
-  var guideR = [300, 232, 167, 107, 55];
-  for (var gi = 0; gi < guideR.length; gi++) {
-    svg.appendChild(svgEl('circle', {
-      cx: 0, cy: 0, r: guideR[gi],
-      fill: 'none', stroke: '#e0ddd8',
-      'stroke-width': 0.5, 'stroke-dasharray': '2,6',
-    }));
+  // Draw arcs only between paired nodes at each ring radius
+  function arc(r, startDeg, endDeg) {
+    var s = (startDeg - 90) * Math.PI / 180;
+    var e = (endDeg   - 90) * Math.PI / 180;
+    var x1 = r * Math.cos(s), y1 = r * Math.sin(s);
+    var x2 = r * Math.cos(e), y2 = r * Math.sin(e);
+    var span = ((endDeg - startDeg) + 360) % 360;
+    var large = span > 180 ? 1 : 0;
+    var el = svgEl('path', {
+      d: 'M ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2,
+      fill: 'none', stroke: '#999', 'stroke-width': 1.5,
+    });
+    svg.appendChild(el);
   }
 
+  // R32 ring: arc between each pair of team slots (match i = slots i*2 and i*2+1)
+  for (var ai = 0; ai < 16; ai++) {
+    arc(RADII.r32, slotAngle(ai * 2), slotAngle(ai * 2 + 1));
+  }
+
+  // R16 ring: arc between the two join nodes that feed each R16 match
+  // R16 match i is fed by join nodes i*2 and i*2+1
+  for (var ai2 = 0; ai2 < 8; ai2++) {
+    arc(RADII.join, joinAngle(ai2 * 2), joinAngle(ai2 * 2 + 1));
+  }
+
+  // QF ring: arc between the two R16 nodes that feed each QF match
+  // QF match i is fed by R16 nodes i*2 and i*2+1
+  for (var ai3 = 0; ai3 < 4; ai3++) {
+    arc(RADII.r16, r16Angle(ai3 * 2), r16Angle(ai3 * 2 + 1));
+  }
+
+  // SF ring: arc between the two QF nodes that feed each SF match
+  // SF match i is fed by QF nodes i*2 and i*2+1
+  for (var ai4 = 0; ai4 < 2; ai4++) {
+    arc(RADII.qf, qfAngle(ai4 * 2), qfAngle(ai4 * 2 + 1));
+  }
+
+  // Final ring: arc between the two SF nodes
+  arc(RADII.sf, sfAngle(0), sfAngle(1));
 
   var linesG = svgEl('g');
   var nodesG = svgEl('g');
 
-  // ── Node positions ──
-  //
-  // There are 5 levels of nodes:
-  //   R32:  32 team nodes (2 per match, 16 matches)
-  //   join: 16 "join" nodes — one per R32 match, at the midpoint of its two team slots.
-  //         This is where the two R32 team lines converge. It shows the R32 winner.
-  //   QF:    4 nodes — each at midpoint of 2 join nodes. Shows R16 winner.
-  //   SF:    2 nodes — midpoint of 2 QF nodes. Shows QF winner.
-  //   fin:   2 nodes — one per finalist, on SF angles one ring inward.
-  //
-  // Line structure (all straight):
-  //   R32 team A → join[mi]
-  //   R32 team B → join[mi]
-  //   join[mi*2] → qf[floor(mi/2)]   (pairs of join nodes → one QF node)
-  //   qf[qi*2]   → sf[floor(qi/2)]
-  //   sf[0]      → fin[0]
-  //   sf[1]      → fin[1]
-  //   fin[0]     → centre (0,0)
-  //   fin[1]     → centre (0,0)
+  // ── Pre-compute all node positions ──
 
-  // R32 team positions
-  var r32A = [], r32B = [], r32AngA = [], r32AngB = [];
-  for (var mi = 0; mi < 16; mi++) {
-    var angA = slotAngle(mi * 2);
-    var angB = slotAngle(mi * 2 + 1);
-    r32A.push(polar(angA, RADII.r32));
-    r32B.push(polar(angB, RADII.r32));
-    r32AngA.push(angA);
-    r32AngB.push(angB);
+  // R32 outer ring: 32 individual team nodes
+  var r32 = [], r32ang = [];
+  for (var s = 0; s < 32; s++) {
+    var a = slotAngle(s);
+    r32.push(polar(a, RADII.r32));
+    r32ang.push(a);
   }
 
-  // Join nodes: 16 nodes, one per R32 match, at r16 radius
-  // join[mi] is between team A and team B of R32[mi]
-  var joinPos = [], joinAng = [];
+  // Join ring: 16 nodes, one per R32 match, between the two team slots
+  var joinP = [], joinA = [];
   for (var ji = 0; ji < 16; ji++) {
-    var ja = r16Angle(ji);   // midpoint of slot ji*2 and ji*2+1
-    joinPos.push(polar(ja, RADII.r16));
-    joinAng.push(ja);
+    var ja = joinAngle(ji);
+    joinP.push(polar(ja, RADII.join));
+    joinA.push(ja);
   }
 
-  // QF nodes: 8 nodes, one per R16 match, sitting between its two join nodes
-  // qfPos[i] sits between joinPos[i*2] and joinPos[i*2+1]
-  var qfPos = [], qfAng = [];
-  for (var qi = 0; qi < 8; qi++) {
-    var qa = qfAngle(qi);   // midpoint of join[i*2] and join[i*2+1]
-    qfPos.push(polar(qa, RADII.qf));
-    qfAng.push(qa);
+  // R16 ring: 8 nodes, one per R16 match
+  var r16P = [], r16A = [];
+  for (var ri = 0; ri < 8; ri++) {
+    var ra = r16Angle(ri);
+    r16P.push(polar(ra, RADII.r16));
+    r16A.push(ra);
   }
 
-  // SF nodes: 4 nodes, one per QF match, each between its 2 upstream QF nodes
-  // sfPos[i] sits between qfPos[i*2] and qfPos[i*2+1]
-  var sfPos = [], sfAng = [];
-  for (var sfi = 0; sfi < 4; sfi++) {
-    var sa = sfAngle(sfi);
-    sfPos.push(polar(sa, RADII.sf));
-    sfAng.push(sa);
+  // QF ring: 4 nodes
+  var qfP = [], qfA = [];
+  for (var qi = 0; qi < 4; qi++) {
+    var qa = qfAngle(qi);
+    qfP.push(polar(qa, RADII.qf));
+    qfA.push(qa);
   }
 
-  // Final approach nodes: 2 nodes, one per SF match, each between its 2 upstream SF nodes
-  // finPos[i] sits between sfPos[i*2] and sfPos[i*2+1]
-  var finPos = [], finAng = [];
-  for (var fni = 0; fni < 2; fni++) {
-    var fa = finAngle(fni);
-    finPos.push(polar(fa, RADII.fin));
-    finAng.push(fa);
+  // SF ring: 2 nodes
+  var sfP = [], sfA = [];
+  for (var si = 0; si < 2; si++) {
+    var sa = sfAngle(si);
+    sfP.push(polar(sa, RADII.sf));
+    sfA.push(sa);
   }
 
   var finWin = getWinner(FINAL_ID);
   var finSc  = getScore(FINAL_ID);
 
-  // ── Draw lines ──
+  // ── Lines: arc midpoint on R32 ring → join nodes ──
+  for (var mi = 0; mi < 16; mi++) {
+    var sc  = getScore(R32[mi]);
+    var w   = getWinner(R32[mi]);
+    var liv = sc && sc.status === 'live';
+    var midR32 = polar(joinAngle(mi), RADII.r32);
+    linesG.appendChild(seg(midR32.x, midR32.y, joinP[mi].x, joinP[mi].y,
+      liv ? 'live' : (w ? 'won' : '')));
+  }
 
-  // R32 team → join node
+  // ── Lines: arc midpoint on join ring → R16 nodes ──
+  // One line per R16 match, originating from the midpoint of the arc between the two feeder join nodes.
+  for (var ji2 = 0; ji2 < 8; ji2++) {
+    var r16sc  = getScore(R16[ji2]);
+    var r16w   = getWinner(R16[ji2]);
+    var r16liv = r16sc && r16sc.status === 'live';
+    var midPt  = polar(r16Angle(ji2), RADII.join);
+    linesG.appendChild(seg(midPt.x, midPt.y, r16P[ji2].x, r16P[ji2].y,
+      r16liv ? 'live' : (r16w ? 'won' : '')));
+  }
+
+  // ── Lines: arc midpoint on R16 ring → QF nodes ──
+  for (var qi2 = 0; qi2 < 4; qi2++) {
+    var qfsc  = getScore(QF[qi2]);
+    var qfw2  = getWinner(QF[qi2]);
+    var qfliv = qfsc && qfsc.status === 'live';
+    var midPt2 = polar(qfAngle(qi2), RADII.r16);
+    linesG.appendChild(seg(midPt2.x, midPt2.y, qfP[qi2].x, qfP[qi2].y,
+      qfliv ? 'live' : (qfw2 ? 'won' : '')));
+  }
+
+  // ── Lines: arc midpoint on QF ring → SF nodes ──
+  for (var si2 = 0; si2 < 2; si2++) {
+    var sfsc  = getScore(SF[si2]);
+    var sfw2  = getWinner(SF[si2]);
+    var sfliv = sfsc && sfsc.status === 'live';
+    var midPt3 = polar(sfAngle(si2), RADII.qf);
+    linesG.appendChild(seg(midPt3.x, midPt3.y, sfP[si2].x, sfP[si2].y,
+      sfliv ? 'live' : (sfw2 ? 'won' : '')));
+  }
+
+  // ── Lines: arc midpoint on SF ring → centre ──
+  var finsc2  = getScore(FINAL_ID);
+  var finw2   = getWinner(FINAL_ID);
+  var finliv2 = finsc2 && finsc2.status === 'live';
+  var finMid  = polar((sfAngle(0) + sfAngle(1)) / 2, RADII.sf);
+  linesG.appendChild(seg(finMid.x, finMid.y, 0, 0,
+    finliv2 ? 'live' : (finw2 ? 'won' : '')));
+
+  // ── Draw R32 team nodes ──
   for (var mi2 = 0; mi2 < 16; mi2++) {
     var sid  = R32[mi2];
     var sc2  = getScore(sid);
+    var t1   = sc2 && !isPlaceholder(sc2.t1) ? sc2.t1 : null;
+    var t2   = sc2 && !isPlaceholder(sc2.t2) ? sc2.t2 : null;
     var w2   = getWinner(sid);
-    var liv  = sc2 && sc2.status === 'live';
-    var aWon = w2 && sc2 && w2 === sc2.t1;
-    var bWon = w2 && sc2 && w2 === sc2.t2;
-    linesG.appendChild(line(r32A[mi2].x, r32A[mi2].y, joinPos[mi2].x, joinPos[mi2].y,
-      liv ? 'live' : (aWon ? 'won' : '')));
-    linesG.appendChild(line(r32B[mi2].x, r32B[mi2].y, joinPos[mi2].x, joinPos[mi2].y,
-      liv ? 'live' : (bWon ? 'won' : '')));
+    var sA   = mi2 * 2;
+    var sB   = mi2 * 2 + 1;
+    nodesG.appendChild(makeNode(r32[sA].x, r32[sA].y, NR.r32, t1, sid, w2 && t1 && w2 !== t1));
+    nodesG.appendChild(makeNode(r32[sB].x, r32[sB].y, NR.r32, t2, sid, w2 && t2 && w2 !== t2));
+    nodesG.appendChild(makeLabel(r32[sA].x, r32[sA].y, r32ang[sA],
+      shortName(t1), NR.r32, w2 === t1 ? 'won' : (t1 ? 'active' : ''), personFor(t1)));
+    nodesG.appendChild(makeLabel(r32[sB].x, r32[sB].y, r32ang[sB],
+      shortName(t2), NR.r32, w2 === t2 ? 'won' : (t2 ? 'active' : ''), personFor(t2)));
   }
 
-  // join → QF node  (join[0]+join[1] → qfPos[0], join[2]+join[3] → qfPos[1], etc.)
-  // Gold only when the R16 match (R16[floor(ji/2)]) has a winner.
-  for (var ji2 = 0; ji2 < 16; ji2++) {
-    var r16idx = Math.floor(ji2 / 2);
-    var jw = getWinner(R16[r16idx]);
-    linesG.appendChild(line(joinPos[ji2].x, joinPos[ji2].y,
-      qfPos[r16idx].x, qfPos[r16idx].y,
-      jw ? 'won' : ''));
-  }
-
-  // QF → SF  (qfPos[i*2] and qfPos[i*2+1] → sfPos[i])
-  // Gold only when the QF match (QF[floor(qi/2)]) has a winner.
-  for (var qi2 = 0; qi2 < 8; qi2++) {
-    var qfMatchIdx = Math.floor(qi2 / 2);
-    var qw = getWinner(QF[qfMatchIdx]);
-    linesG.appendChild(line(qfPos[qi2].x, qfPos[qi2].y,
-      sfPos[qfMatchIdx].x, sfPos[qfMatchIdx].y,
-      qw ? 'won' : ''));
-  }
-
-  // SF → final approach nodes  (sfPos[i*2] and sfPos[i*2+1] → finPos[i])
-  // Gold only when the SF match (SF[floor(si/2)]) has a winner.
-  for (var si2 = 0; si2 < 4; si2++) {
-    var sfMatchIdx = Math.floor(si2 / 2);
-    var sw = getWinner(SF[sfMatchIdx]);
-    linesG.appendChild(line(sfPos[si2].x, sfPos[si2].y,
-      finPos[sfMatchIdx].x, finPos[sfMatchIdx].y,
-      sw ? 'won' : ''));
-  }
-
-  // Final approach nodes → centre
-  linesG.appendChild(line(finPos[0].x, finPos[0].y, 0, 0, finWin ? 'won' : ''));
-  linesG.appendChild(line(finPos[1].x, finPos[1].y, 0, 0, finWin ? 'won' : ''));
-
-  // ── Draw R32 nodes ──
-  for (var mi3 = 0; mi3 < 16; mi3++) {
-    var sid3 = R32[mi3];
-    var sc3  = getScore(sid3);
-    var t1   = sc3 && !isPlaceholder(sc3.t1) ? sc3.t1 : null;
-    var t2   = sc3 && !isPlaceholder(sc3.t2) ? sc3.t2 : null;
-    var w3   = getWinner(sid3);
-    nodesG.appendChild(makeNode(r32A[mi3].x, r32A[mi3].y, NR.r32, t1, sid3, w3 && t1 && w3 !== t1));
-    nodesG.appendChild(makeNode(r32B[mi3].x, r32B[mi3].y, NR.r32, t2, sid3, w3 && t2 && w3 !== t2));
-    nodesG.appendChild(makeLabel(r32A[mi3].x, r32A[mi3].y, r32AngA[mi3],
-      shortName(t1), NR.r32, w3 === t1 ? 'won' : (t1 ? 'active' : ''), personFor(t1)));
-    nodesG.appendChild(makeLabel(r32B[mi3].x, r32B[mi3].y, r32AngB[mi3],
-      shortName(t2), NR.r32, w3 === t2 ? 'won' : (t2 ? 'active' : ''), personFor(t2)));
-  }
-
-  // ── Draw join nodes (show R32 winner advancing toward QF) ──
+  // ── Draw join nodes (show R32 winner) — no labels on inner rings ──
   for (var ji3 = 0; ji3 < 16; ji3++) {
-    var jwin    = getWinner(R32[ji3]);
-    var jsc     = getScore(R32[ji3]);
-    var jt1     = jsc && !isPlaceholder(jsc.t1) ? jsc.t1 : null;
-    var jt2     = jsc && !isPlaceholder(jsc.t2) ? jsc.t2 : null;
-    // Show winner if known; otherwise show first known team as placeholder
-    var jdisplay = jwin || null;
-    nodesG.appendChild(makeNode(joinPos[ji3].x, joinPos[ji3].y, NR.r16,
-      jdisplay, R32[ji3], false));
-    if (jdisplay) {
-      nodesG.appendChild(makeLabel(joinPos[ji3].x, joinPos[ji3].y, joinAng[ji3],
-        shortName(jdisplay), NR.r16, 'won'));
-    }
+    var jwin = getWinner(R32[ji3]);
+    nodesG.appendChild(makeNode(joinP[ji3].x, joinP[ji3].y, NR.join, jwin, R32[ji3], false));
   }
 
-  // ── Draw QF nodes (8 nodes, one per R16 match) ──
-  // qfPos[i] shows the winner of R16[i]
-  for (var qi3 = 0; qi3 < 8; qi3++) {
-    var r16id_q  = R16[qi3];
-    var r16w_q   = getWinner(r16id_q);
-    var qdisplay = r16w_q || null;
-    nodesG.appendChild(makeNode(qfPos[qi3].x, qfPos[qi3].y, NR.qf, qdisplay, r16id_q, false));
-    if (qdisplay) {
-      nodesG.appendChild(makeLabel(qfPos[qi3].x, qfPos[qi3].y, qfAng[qi3],
-        shortName(qdisplay), NR.qf, 'won'));
-    }
+  // ── Draw R16 nodes ──
+  for (var ri3 = 0; ri3 < 8; ri3++) {
+    var r16w = getWinner(R16[ri3]);
+    nodesG.appendChild(makeNode(r16P[ri3].x, r16P[ri3].y, NR.r16, r16w, R16[ri3], false));
   }
 
-  // ── Draw SF nodes (4 nodes, one per QF match) ──
-  // sfPos[i] shows the winner of QF[i]
-  for (var sfi2 = 0; sfi2 < 4; sfi2++) {
-    var qfid_s   = QF[sfi2];
-    var qfw_s    = getWinner(qfid_s);
-    var sdisplay = qfw_s || null;
-    nodesG.appendChild(makeNode(sfPos[sfi2].x, sfPos[sfi2].y, NR.sf, sdisplay, qfid_s, false));
-    if (sdisplay) {
-      nodesG.appendChild(makeLabel(sfPos[sfi2].x, sfPos[sfi2].y, sfAng[sfi2],
-        shortName(sdisplay), NR.sf, 'won'));
-    }
+  // ── Draw QF nodes ──
+  for (var qi3 = 0; qi3 < 4; qi3++) {
+    var qfw = getWinner(QF[qi3]);
+    nodesG.appendChild(makeNode(qfP[qi3].x, qfP[qi3].y, NR.qf, qfw, QF[qi3], false));
   }
 
-  // ── Draw final approach nodes (2 nodes, one per SF match) ──
-  // finPos[i] shows the winner of SF[i]
-  for (var fni2 = 0; fni2 < 2; fni2++) {
-    var sfid_f   = SF[fni2];
-    var sfw_f    = getWinner(sfid_f);
-    var fdisplay = (finSc && !isPlaceholder(fni2 === 0 ? finSc.t1 : finSc.t2)
-      ? (fni2 === 0 ? finSc.t1 : finSc.t2) : null) || sfw_f;
-    var felim    = finWin && fdisplay && finWin !== fdisplay;
-    nodesG.appendChild(makeNode(finPos[fni2].x, finPos[fni2].y, NR.fin, fdisplay, FINAL_ID, felim));
-    if (fdisplay) {
-      nodesG.appendChild(makeLabel(finPos[fni2].x, finPos[fni2].y, finAng[fni2],
-        shortName(fdisplay), NR.fin, finWin === fdisplay ? 'won' : 'active'));
-    }
+  // ── Draw SF nodes ──
+  for (var si3 = 0; si3 < 2; si3++) {
+    var sfw = getWinner(SF[si3]);
+    nodesG.appendChild(makeNode(sfP[si3].x, sfP[si3].y, NR.sf, sfw, SF[si3], false));
   }
 
   svg.appendChild(linesG);
   svg.appendChild(nodesG);
 
-  // ── Centre trophy ──
-  var champ = finWin;
-  var cg    = svgEl('g');
-  cg.appendChild(svgEl('circle', {
-    cx: 0, cy: 0, r: 34, fill: '#fff',
-    stroke: champ ? '#f7c948' : '#e0ddd8',
-    'stroke-width': champ ? 2 : 1,
-  }));
-  var tro = svgEl('text', {
-    x: 0, y: 0,
-    'text-anchor': 'middle', 'dominant-baseline': 'central',
-    'font-size': 22, 'pointer-events': 'none',
-  });
-  tro.textContent = '🏆'; // trophy emoji
-  cg.appendChild(tro);
-  if (champ) {
-    var champMeta = teamMeta(champ);
-    var cf = svgEl('text', {
-      x: 0, y: -52,
-      'text-anchor': 'middle', 'dominant-baseline': 'central',
-      'font-size': 20, 'pointer-events': 'none',
-    });
-    cf.textContent = champMeta[0];
-    cg.appendChild(cf);
-    var cn = svgEl('text', {
-      x: 0, y: 52,
-      'text-anchor': 'middle',
+  // ── Centre node (final) — always exactly at (0,0) ──
+  var cg = svgEl('g');
+  var centreR = 26;
+  if (finWin) {
+    nodesG.appendChild(makeNode(0, 0, centreR, finWin, FINAL_ID, false));
+    var ct = svgEl('text', { x: 0, y: centreR + 12, 'text-anchor': 'middle',
       'font-family': "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      'font-size': 11, 'font-weight': 700, 'letter-spacing': 1,
-      fill: '#b89010', 'pointer-events': 'none',
-    });
-    cn.textContent = champ.toUpperCase();
-    cg.appendChild(cn);
+      'font-size': 9, 'font-weight': 700, 'letter-spacing': 1, fill: '#b89010', 'pointer-events': 'none' });
+    ct.textContent = shortName(finWin).toUpperCase();
+    cg.appendChild(ct);
+  } else {
+    cg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: centreR,
+      fill: '#e8e5e0', stroke: '#bbb', 'stroke-width': 1.5 }));
+    var qt2 = svgEl('text', { x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': Math.round(centreR * 0.65), fill: '#ccc',
+      'font-family': "-apple-system, sans-serif", 'pointer-events': 'none' });
+    qt2.textContent = '?';
+    cg.appendChild(qt2);
   }
   svg.appendChild(cg);
 }
@@ -815,8 +678,7 @@ function showTip(e, teamName, espnId) {
     text = teamName + '  ' + myS + '–' + theirS + '  ' + other + '  (' + lbl + ')';
     if (s.pen) text += '  — ' + s.pen;
   } else if (s && s.t1 && s.t2 && !isPlaceholder(s.t2)) {
-    var other2 = s.t1 === teamName ? s.t2 : s.t1;
-    text = teamName + ' vs ' + other2;
+    text = teamName + ' vs ' + (s.t1 === teamName ? s.t2 : s.t1);
   }
   tip.textContent = text;
   tip.style.opacity = '1';
@@ -826,9 +688,7 @@ function moveTip(e) {
   tip.style.left = (e.clientX + 14) + 'px';
   tip.style.top  = (e.clientY - 30) + 'px';
 }
-function hideTip() {
-  tip.style.opacity = '0';
-}
+function hideTip() { tip.style.opacity = '0'; }
 
 // =============================================================================
 // ESPN FETCH
@@ -844,7 +704,6 @@ function fetchScores() {
   }).then(function(data) {
     var hasLive = false;
     var events = data.events || [];
-
     for (var ei = 0; ei < events.length; ei++) {
       var ev   = events[ei];
       var comp = ev.competitions && ev.competitions[0];
@@ -894,7 +753,7 @@ function fetchScores() {
 
       var w = null;
       if (status === 'ft') {
-        if (home.winner === true)  w = 1;
+        if (home.winner === true) w = 1;
         else if (away.winner === true) w = 2;
         else if (s1 > s2) w = 1;
         else if (s2 > s1) w = 2;
@@ -908,14 +767,10 @@ function fetchScores() {
     }
 
     build();
-    document.getElementById('bracketStatus').textContent =
-      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
     clearTimeout(liveTimer);
     if (hasLive) liveTimer = setTimeout(fetchScores, 60000);
-
   }).catch(function() {
-    document.getElementById('bracketStatus').textContent = 'Could not load scores';
+    // scores unavailable — static bracket still renders
   });
 }
 
