@@ -36,9 +36,10 @@
   pointer-events: none;
   fill: #bbb;
 }
-.b-label.active  { fill: #555; }
-.b-label.won     { fill: #b89010; }
-.b-label-person  { fill: #999; font-weight: 400; font-size: 7.5px; }
+.b-label.won     { fill: #333; }
+.b-label.active  { fill: #333; }
+.b-label.elim    { fill: #999; }
+.b-label-person  { fill: #666; font-weight: 700; font-size: 9.5px; }
 #b-tip {
   position: fixed;
   background: #111;
@@ -408,7 +409,7 @@ function makeNode(x, y, r, teamName, scoreId, eliminated) {
 
 // Label pushed outward from node in the direction of angleDeg
 function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
-  var push = nodeR + 14;
+  var push = nodeR + 24;
   var rad  = (angleDeg - 90) * Math.PI / 180;
   var lx   = x + Math.cos(rad) * push;
   var ly   = y + Math.sin(rad) * push;
@@ -416,13 +417,14 @@ function makeLabel(x, y, angleDeg, text, nodeR, cls, person) {
   if (person) {
     var g = svgEl('g');
     var t1 = svgEl('text', { x: lx, y: ly - 5 });
-    t1.classList.add('b-label');
+    t1.classList.add('b-label', 'b-label-person');
     if (cls) t1.classList.add(cls);
-    t1.textContent = text;
+    t1.textContent = person;
     g.appendChild(t1);
     var t2 = svgEl('text', { x: lx, y: ly + 5 });
-    t2.classList.add('b-label', 'b-label-person');
-    t2.textContent = person;
+    t2.classList.add('b-label');
+    if (cls) t2.classList.add(cls);
+    t2.textContent = text;
     g.appendChild(t2);
     return g;
   }
@@ -607,9 +609,9 @@ function build() {
     nodesG.appendChild(makeNode(r32[sA].x, r32[sA].y, NR.r32, t1, sid, w2 && t1 && w2 !== t1));
     nodesG.appendChild(makeNode(r32[sB].x, r32[sB].y, NR.r32, t2, sid, w2 && t2 && w2 !== t2));
     nodesG.appendChild(makeLabel(r32[sA].x, r32[sA].y, r32ang[sA],
-      shortName(t1), NR.r32, w2 === t1 ? 'won' : (t1 ? 'active' : ''), personFor(t1)));
+      shortName(t1), NR.r32, w2 && w2 !== t1 ? 'elim' : (w2 === t1 ? 'won' : (t1 ? 'active' : '')), personFor(t1)));
     nodesG.appendChild(makeLabel(r32[sB].x, r32[sB].y, r32ang[sB],
-      shortName(t2), NR.r32, w2 === t2 ? 'won' : (t2 ? 'active' : ''), personFor(t2)));
+      shortName(t2), NR.r32, w2 && w2 !== t2 ? 'elim' : (w2 === t2 ? 'won' : (t2 ? 'active' : '')), personFor(t2)));
   }
 
   // ── Draw join nodes (show R32 winner) — no labels on inner rings ──
